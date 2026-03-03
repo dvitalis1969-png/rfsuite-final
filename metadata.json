@@ -1,0 +1,7 @@
+{
+  "name": "2nd March 23:11 RF Frequency Suite",
+  "description": "An advanced web-based application for RF (Radio Frequency) spectrum analysis, compatibility checking, and frequency coordination. It features tools like a frequency analyzer, a compatible frequency generator, a TV white space finder, a real-time 2D spectrum analyzer, a waterfall display, multi-band coordination, and equipment presets.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}

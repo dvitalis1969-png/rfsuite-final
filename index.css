@@ -1,0 +1,77 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+/* Custom styles that were in index.html should probably stay here or in index.html style tag */
+/* But the guidelines say "DO NOT use separate CSS files" except for the global one. */
+/* So I'll move the styles from index.html to here. */
+
+:root {
+  --bg-deep: #020617;
+  --bg-panel: #0f172a;
+  --accent-primary: #6366f1;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-deep);
+  color: #f1f5f9;
+  scrollbar-width: thin;
+  scrollbar-color: #334155 transparent;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+/* Sharpened UI Elements */
+.glass-panel {
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+.animate-pulse-subtle {
+  animation: pulse-subtle 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Sunlight Mode (High Contrast) */
+html.sunlight-mode {
+  filter: invert(1) hue-rotate(180deg);
+  background-color: #ffffff;
+}
+html.sunlight-mode img, 
+html.sunlight-mode video,
+html.sunlight-mode .no-invert {
+  filter: invert(1);
+}
