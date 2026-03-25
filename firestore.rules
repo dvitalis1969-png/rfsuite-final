@@ -1,0 +1,149 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Fields:
+    //   - subscription: string
+    //   - subscriptionStatus: string
+    //   - stripeCustomerId: string
+    //
+    // Collection: feed_posts
+    // Fields:
+    //   - authorId: string (required)
+    //   - authorName: string (required)
+    //   - content: string (required)
+    //   - imageUrl: string (optional)
+    //   - createdAt: timestamp (required)
+    //   - likes: list (optional)
+    //
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.email in ["dvitalis1969@gmail.com", "dnomsed@live.co.uk"] ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+      );
+    }
+
+    function isValidFeedPost(data) {
+      return data.authorId is string && 
+             data.authorName is string && data.authorName.size() < 100 &&
+             data.content is string && data.content.size() < 5000;
+    }
+
+    // Presence rules
+    match /presence/{projectId}/users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId);
+    }
+
+    // Chat message rules
+    match /messages/{chatId}/chat/{messageId} {
+      allow read: if isAuthenticated() && (
+        !chatId.matches('^dm_.*') || 
+        chatId.matches('.*' + request.auth.uid + '.*')
+      );
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid && (
+        !chatId.matches('^dm_.*') || 
+        chatId.matches('.*' + request.auth.uid + '.*')
+      );
+      allow update: if isAuthenticated() && (
+        !chatId.matches('^dm_.*') || 
+        chatId.matches('.*' + request.auth.uid + '.*')
+      ) && (
+        // Allow anyone in the chat to update reactions
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions']) ||
+        // Allow owner to edit text, editedAt, or linkPreview
+        (resource.data.userId == request.auth.uid && 
+         request.resource.data.userId == resource.data.userId &&
+         request.resource.data.diff(resource.data).affectedKeys().hasAny(['text', 'editedAt', 'linkPreview']))
+      );
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid && (
+        !chatId.matches('^dm_.*') || 
+        chatId.matches('.*' + request.auth.uid + '.*')
+      );
+    }
+
+    // Typing status rules
+    match /messages/{chatId}/typing/{userId} {
+      allow read: if isAuthenticated() && (
+        !chatId.matches('^dm_.*') || 
+        chatId.matches('.*' + request.auth.uid + '.*')
+      );
+      allow write: if isOwner(userId) && (
+        !chatId.matches('^dm_.*') || 
+        chatId.matches('.*' + request.auth.uid + '.*')
+      );
+    }
+
+    // Project rules
+    match /projects/{projectId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    // Plot rules
+    match /plots/{plotId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    // User rules
+    match /users/{userId} {
+      allow read, write: if isOwner(userId) || isAdmin();
+      
+      // Unread DMs subcollection
+      match /unread_dms {
+        allow list: if isOwner(userId);
+        
+        match /{senderId} {
+          allow read: if isOwner(userId);
+          allow write: if isAuthenticated() && (request.auth.uid == userId || request.auth.uid == senderId);
+        }
+      }
+    }
+
+    // Public Profiles rules
+    match /public_profiles/{userId} {
+      allow read: if true;
+      allow write: if isOwner(userId) || isAdmin();
+    }
+
+    // Feed Posts rules
+    match /feed_posts/{postId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && 
+                    request.resource.data.authorId == request.auth.uid && 
+                    isValidFeedPost(request.resource.data);
+      allow update: if isAuthenticated() && (
+        // Allow owner to edit content
+        (resource.data.authorId == request.auth.uid && 
+         request.resource.data.authorId == resource.data.authorId &&
+         isValidFeedPost(request.resource.data)) ||
+        // Allow others to like/comment (only specific fields changing)
+        (request.resource.data.diff(resource.data).affectedKeys().hasAny(['likes', 'comments']) &&
+         request.resource.data.authorId == resource.data.authorId)
+      );
+      allow delete: if isAuthenticated() && (resource.data.authorId == request.auth.uid || isAdmin());
+    }
+  }
+}

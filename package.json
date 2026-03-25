@@ -1,0 +1,50 @@
+{
+  "name": "18th-feb-17:47-rf-frequency-suite",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "dev": "tsx server.ts",
+    "build": "vite build && tsc server.ts --outDir dist --module nodenext --moduleResolution nodenext --esModuleInterop --skipLibCheck && tsx generate-zip.ts",
+    "start": "node dist/server.js",
+    "preview": "vite preview",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@tailwindcss/typography": "^0.5.19",
+    "@tailwindcss/vite": "^4.2.1",
+    "adm-zip": "^0.5.16",
+    "archiver": "^7.0.1",
+    "csv-parse": "^6.2.1",
+    "express": "^5.2.1",
+    "firebase": "^12.10.0",
+    "firebase-admin": "^13.7.0",
+    "link-preview-js": "^4.0.0",
+    "lucide-react": "^0.575.0",
+    "motion": "^12.34.3",
+    "proj4": "^2.20.4",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
+    "stripe": "^20.4.0",
+    "tailwindcss": "^4.2.1",
+    "tsx": "^4.21.0"
+  },
+  "devDependencies": {
+    "@netlify/functions": "^5.1.2",
+    "@types/archiver": "^7.0.0",
+    "@types/express": "^5.0.6",
+    "@types/node": "^22.14.0",
+    "@types/proj4": "^2.5.6",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.0.0",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0",
+    "vite-plugin-pwa": "^1.2.0"
+  }
+}

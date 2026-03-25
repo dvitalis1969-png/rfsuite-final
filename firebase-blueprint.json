@@ -1,0 +1,96 @@
+{
+  "entities": {
+    "Presence": {
+      "title": "Presence",
+      "description": "Tracks user online status in a project",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The user's ID" },
+        "userName": { "type": "string", "description": "The user's display name" },
+        "lastSeen": { "type": "number", "description": "Timestamp of last activity" },
+        "projectId": { "type": "string", "description": "The project ID" }
+      },
+      "required": ["userId", "userName", "lastSeen", "projectId"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "Chat message in a project",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The sender's ID" },
+        "userName": { "type": "string", "description": "The sender's name" },
+        "text": { "type": "string", "description": "The message text" },
+        "timestamp": { "type": "number", "description": "Message timestamp" },
+        "projectId": { "type": "string", "description": "The project ID" },
+        "imageUrl": { "type": "string", "description": "Optional image URL" },
+        "audioUrl": { "type": "string", "description": "Optional audio URL" },
+        "editedAt": { "type": "object", "description": "Optional edit timestamp" },
+        "linkPreview": { "type": "object", "description": "Optional link preview data" },
+        "reactions": { "type": "object", "description": "Map of emoji to user IDs" }
+      },
+      "required": ["userId", "userName", "timestamp", "projectId"]
+    },
+    "Plot": {
+      "title": "Plot",
+      "description": "Shared spectrum plot",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The creator's ID" },
+        "userName": { "type": "string", "description": "The creator's name" },
+        "timestamp": { "type": "number", "description": "Plot creation timestamp" },
+        "projectId": { "type": "string", "description": "The project ID" },
+        "imageData": { "type": "string", "description": "Base64 encoded plot image" },
+        "description": { "type": "string", "description": "Description of the plot" }
+      },
+      "required": ["userId", "userName", "timestamp", "projectId", "imageData"]
+    },
+    "FeedPost": {
+      "title": "FeedPost",
+      "description": "A post in the activity feed",
+      "type": "object",
+      "properties": {
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "content": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "createdAt": { "type": "object" },
+        "updatedAt": { "type": "object" },
+        "likes": { "type": "array", "items": { "type": "string" } },
+        "comments": { "type": "array", "items": { "type": "object" } }
+      },
+      "required": ["authorId", "authorName", "content", "createdAt"]
+    },
+    "User": {
+      "title": "User",
+      "description": "User profile and subscription data",
+      "type": "object",
+      "properties": {
+        "subscription": { "type": "string" },
+        "subscriptionStatus": { "type": "string" },
+        "stripeCustomerId": { "type": "string" }
+      }
+    }
+  },
+  "firestore": {
+    "/presence/{projectId}/users/{userId}": {
+      "schema": { "$ref": "Presence" },
+      "description": "User presence in a project"
+    },
+    "/messages/{projectId}/chat/{messageId}": {
+      "schema": { "$ref": "Message" },
+      "description": "Chat messages for a project"
+    },
+    "/plots/{plotId}": {
+      "schema": { "$ref": "Plot" },
+      "description": "Shared plots"
+    },
+    "/feed_posts/{postId}": {
+      "schema": { "$ref": "FeedPost" },
+      "description": "Activity feed posts"
+    },
+    "/users/{userId}": {
+      "schema": { "$ref": "User" },
+      "description": "User profiles"
+    }
+  }
+}

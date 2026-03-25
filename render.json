@@ -1,0 +1,8 @@
+{
+  "scripts": {
+    "start": "node dist/server.js",
+    "build": "npm install && npm run build:client && npm run build:server",
+    "build:client": "vite build",
+    "build:server": "tsc server.ts --outDir dist --module commonjs --esModuleInterop --skipLibCheck"
+  }
+}

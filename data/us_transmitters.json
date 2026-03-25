@@ -1,0 +1,10 @@
+
+[
+  {
+    "name": "Placeholder US Transmitter (NYC)",
+    "lat": 40.7128,
+    "lng": -74.0060,
+    "radius": 100,
+    "channels": [14, 15, 16]
+  }
+]

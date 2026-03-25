@@ -1,0 +1,109 @@
+38:    setZoneConfigs: (configs: ZoneConfig[]) => void;
+40:    setNumZones: (num: number) => void;
+42:    setDistances: (distances: number[][]) => void;
+48:    setScanData?: (data: ScanDataPoint[] | null) => void;
+52:    setTvChannelStates: (states: Record<number, TVChannelState>) => void;
+55:    setIsCalculating?: (is: boolean) => void;
+327:            setPreviewData([]);
+502:        setPreviewData(results);
+513:        setIsProcessing(true);
+529:                setWorkbookData(rows);
+530:                setColumnMapping({}); 
+534:                setIsProcessing(false);
+541:        setColumnMapping(prev => {
+578:        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+581:        link.setAttribute("href", url);
+582:        link.setAttribute("download", `running_order_${selectedDay.toLowerCase()}_${selectedDate}.csv`);
+613:                                                setSelectedDay(d);
+614:                                                if (d === 'SATURDAY') setSelectedDate("2023-05-27");
+615:                                                else setSelectedDate("2023-05-28");
+629:                                    onChange={e => setSelectedDate(e.target.value)}
+821:        setManualExclusions(prev => prev ? `${prev}, ${newRange}` : newRange);
+827:        setManualExclusions(zones.join(', '));
+831:        setShowTabulation(true);
+832:        setTimeout(() => {
+837:                setTimeout(() => {
+845:        setNumZonesInput(numZones.toString());
+871:            setTvStates(nextStates);
+877:        const syncSystems = (currentSystems: ConstantSystemRequest[], setFn: (val: ConstantSystemRequest[]) => void) => {
+898:                    setFn(next);
+903:        syncSystems(constantSystems, setConstantSystems);
+908:        setNumZonesInput(val);
+911:            setNumZones(parsed);
+921:        setDistances(next);
+929:        setZoneConfigs(nextZones);
+939:        setConstantSystems(nextConstants);
+941:        setFestivalActs(prev => prev.map(act => 
+1095:        setFestivalActs(prev => prev.map(update));
+1096:        setConstantSystems(prev => prev.map(update));
+1101:        if (setIsCalculating) setIsCalculating(true);
+1102:        setIsGenerating(true); setOptimizationReport(null);
+1107:        setProgress({ found: 0, processed: 0, total: 0, totalRequested: reqTotal, status: 'Initializing Engine...' });
+1111:            setConstantSystems(newConstants);
+1117:            setFestivalActs(plan); setOptimizationReport(report);
+1118:            setIsHudMinimized(false);
+1120:            setIsGenerating(false); 
+1121:            if (setIsCalculating) setIsCalculating(false);
+1140:        setDiagnosticConflicts(result.conflicts); setHasAnalyzed(true);
+1144:        setTvStates(prev => {
+1152:            if (setTvChannelStates) setTvChannelStates(nextMap);
+1163:        setTvStates(next);
+1164:        if (setTvChannelStates) setTvChannelStates(next);
+1168:        setTvStates({});
+1169:        if (setTvChannelStates) setTvChannelStates({});
+1173:        setIsExportMenuOpen(false);
+1194:        setIsExportMenuOpen(false);
+1230:            doc.setFontSize(18);
+1232:            doc.setFontSize(10);
+1242:        setFestivalActs(prev => prev.map(act => {
+1263:        setFestivalActs(prev => prev.map(act => ({
+1273:        setFestivalActs(prev => prev.map(act => ({
+1319:        setDiagSelectedIds(prev => {
+1327:        setLedgerSort(prev => {
+1344:                    onClose={() => setIsConverterOpen(false)} 
+1345:                    onSync={(newActs) => setFestivalActs(prev => [...prev, ...newActs])}
+1390:                                <input type="number" value={overlapMinutes} onChange={e => setOverlapMinutes(parseInt(e.target.value) || 0)} className="w-full bg-slate-950 border border-slate-700 p-2 rounded text-sm text-cyan-400 font-bold" />
+1394:                                <input value={manualExclusions} onChange={e => setManualExclusions(e.target.value)} placeholder="e.g. 500-505, 606.5-608" className="w-full bg-slate-950 border border-slate-700 p-2 rounded text-xs font-mono text-slate-300" />
+1410:                                            onClick={() => setManualExclusions('')}
+1433:                                onChange={e => setGlobalDistInput(e.target.value)}
+1462:                                                    setDistances(next);
+1492:                                                setCompatibilityMatrix(next);
+1510:                            setTvStates(next);
+1511:                            setTvChannelStates(next);
+1514:                            setTvStates(updates);
+1515:                            setTvChannelStates(updates);
+1543:                            <select value={tvRegion} onChange={e => setTvRegion(e.target.value as any)} className="bg-slate-800 text-xs border border-slate-700 rounded px-2 py-1 text-slate-200 font-bold uppercase">
+1576:                            onClick={() => setShowTabulation(!showTabulation)}
+1583:                                onClick={() => setIsExportMenuOpen(!isExportMenuOpen)} 
+1639:                            <button onClick={() => setShowTabulation(false)} className="text-slate-500 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest">&times; Close</button>
+1715:                            <button key={tab} onClick={() => setActiveSubTab(tab)} className={`flex-1 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] transition-all border-b-4 active:translate-y-0.5 flex items-center justify-center gap-2 ${styles}`}>
+1728:                        <button onClick={() => setFestivalActs([...festivalActs, { id: `act-${Date.now()}`, actName: `New Act`, stage: zoneConfigs[0]?.name || 'Stage 1', startTime: new Date(), endTime: new Date(Date.now() + 3600000), active: true, micRequests: [], iemRequests: [], frequencies: [] }])} className="flex-1 py-3 rounded-xl font-semibold uppercase tracking-wide text-[10px] transition-all border-b-4 active:translate-y-0.5 flex items-center justify-center gap-2 bg-indigo-600 text-white border-indigo-800 hover:bg-indigo-500 shadow-lg shadow-indigo-500/20">+ Add Act</button>
+1731:                            setFestivalActs(prev => prev.map(act => ({ ...act, micRequests: [...(act.micRequests || []), newMicReq] })));
+1735:                            setFestivalActs(prev => prev.map(act => ({ ...act, iemRequests: [...(act.iemRequests || []), newIemReq] })));
+1738:                        <button onClick={() => setIsConverterOpen(true)} className="flex-1 py-3 rounded-xl font-semibold uppercase tracking-wide text-[10px] transition-all border-b-4 active:translate-y-0.5 flex items-center justify-center gap-2 bg-indigo-600 text-white border-indigo-800 hover:bg-indigo-500 shadow-lg shadow-indigo-500/20">🧮 EXCEL CONVERTER</button>
+1757:                                    setFestivalActs(prev => [...prev, ...newActs]);
+1792:                                onClick={() => setShowTabulation(!showTabulation)} 
+1847:                                <input value={act.actName} onChange={e => setFestivalActs(prev => prev.map(a => a.id === act.id ? { ...a, actName: e.target.value } : a))} className="bg-transparent font-bold text-lg text-white outline-none border-b border-white/10" />
+1848:                                <button onClick={() => setFestivalActs(prev => prev.filter(a => a.id !== act.id))} className="text-red-400 font-bold">&times;</button>
+1856:                                        onChange={e => setFestivalActs(prev => prev.map(a => a.id === act.id ? { ...a, stage: e.target.value } : a))}
+1867:                                        onChange={e => setFestivalActs(prev => prev.map(a => a.id === act.id ? { ...a, startTime: new Date(e.target.value) } : a))}
+1876:                                        onChange={e => setFestivalActs(prev => prev.map(a => a.id === act.id ? { ...a, endTime: new Date(e.target.value) } : a))}
+1884:                                    <RequestManager title="Wireless Microphones" type="mic" requests={act.micRequests} onUpdate={(reqs) => setFestivalActs(prev => prev.map(a => a.id === act.id ? { ...a, micRequests: reqs } : a))} db={fullEquipmentDatabase} overrides={equipmentOverrides} />
+1888:                                    <RequestManager title="In Ear Monitors" type="iem" requests={act.iemRequests} onUpdate={(reqs) => setFestivalActs(prev => prev.map(a => a.id === act.id ? { ...a, iemRequests: reqs } : a))} db={fullEquipmentDatabase} overrides={equipmentOverrides} />
+1904:                                    <RequestManager title="Constant Tx Microphones" type="mic" requests={sys.micRequests} onUpdate={(reqs) => setConstantSystems(prev => prev.map((s, i) => i === idx ? { ...s, micRequests: reqs } : s))} db={fullEquipmentDatabase} overrides={equipmentOverrides} />
+1907:                                        onToggleLock={id => setConstantSystems(prev => prev.map((s, i) => i === idx ? { ...s, frequencies: s.frequencies?.map(f => f.id === id ? { ...f, locked: !f.locked } : f) } : s))}
+1908:                                        onRemove={id => setConstantSystems(prev => prev.map((s, i) => i === idx ? { ...s, frequencies: s.frequencies?.filter(f => f.id !== id) } : s))}
+1909:                                        onValueChange={(id, v) => setConstantSystems(prev => prev.map((s, i) => i === idx ? { ...s, frequencies: s.frequencies?.map(f => f.id === id ? { ...f, value: parseFloat(v) || 0 } : f) } : s))}
+1910:                                        onLabelChange={(id, v) => setConstantSystems(prev => prev.map((s, i) => i === idx ? { ...s, frequencies: s.frequencies?.map(f => f.id === id ? { ...f, label: v } : f) } : s))}
+1911:                                        onTypeChange={(id, v) => setConstantSystems(prev => prev.map((s, i) => i === idx ? { ...s, frequencies: s.frequencies?.map(f => f.id === id ? { ...f, type: v } : f) } : s))}
+1915:                                    <RequestManager title="Constant Tx IEMs" type="iem" requests={sys.iemRequests} onUpdate={(reqs) => setConstantSystems(prev => prev.map((s, i) => i === idx ? { ...s, iemRequests: reqs } : s))} db={fullEquipmentDatabase} overrides={equipmentOverrides} />
+1918:                                        onToggleLock={id => setConstantSystems(prev => prev.map((s, i) => i === idx ? { ...s, frequencies: s.frequencies?.map(f => f.id === id ? { ...f, locked: !f.locked } : f) } : s))}
+1919:                                        onRemove={id => setConstantSystems(prev => prev.map((s, i) => i === idx ? { ...s, frequencies: s.frequencies?.filter(f => f.id !== id) } : s))}
+1920:                                        onValueChange={(id, v) => setConstantSystems(prev => prev.map((s, i) => i === idx ? { ...s, frequencies: s.frequencies?.map(f => f.id === id ? { ...f, value: parseFloat(v) || 0 } : f) } : s))}
+1921:                                        onLabelChange={(id, v) => setConstantSystems(prev => prev.map((s, i) => i === idx ? { ...s, frequencies: s.frequencies?.map(f => f.id === id ? { ...f, label: v } : f) } : s))}
+1922:                                        onTypeChange={(id, v) => setConstantSystems(prev => prev.map((s, i) => i === idx ? { ...s, frequencies: s.frequencies?.map(f => f.id === id ? { ...f, type: v } : f) } : s))}
+1995:                                        setDiagSelectedIds(allIds);
+1996:                                        setHasAnalyzed(false);
+2003:                                    onClick={() => { setDiagSelectedIds(new Set()); setHasAnalyzed(false); }} 
+2112:                            <button onClick={() => setHasAnalyzed(false)} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-all text-3xl leading-none">&times;</button>
+2184:                            <button onClick={() => setHasAnalyzed(false)} className={`${primaryButton} !px-8 !py-3`}>Close Ledger</button>
