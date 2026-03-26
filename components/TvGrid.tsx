@@ -10,7 +10,7 @@ interface TvGridProps {
     setTvRegion?: (region: 'uk' | 'us') => void;
     tvStates: Record<number, TVChannelState>;
     setTvStates: (states: Record<number, TVChannelState>) => void;
-    tvChannelErpData?: Record<number, { maxErp: number, transmitterName: string }>;
+    tvChannelErpData?: Record<number, { maxErp: number, transmitterName: string, distance?: number }>;
     handleTvChannelCycle: (channel: number) => void;
     handleBlockAllTvChannels: () => void;
     handleClearTv: () => void;
@@ -28,14 +28,50 @@ const TvGrid: React.FC<TvGridProps> = ({
     handleClearTv,
     className = ""
 }) => {
-    const [activeTransmitters, setActiveTransmitters] = useState<string[]>([]);
-    const { handleLookup, isLocating, tvChannelErpData: hookErpData, setTvChannelErpData } = useTvLookup(tvRegion, setTvStates, setActiveTransmitters);
+    const { handleLookup, isLocating, tvChannelErpData: hookErpData, setTvChannelErpData } = useTvLookup(tvRegion, setTvStates);
     const [coordType, setCoordType] = useState<'latlng' | 'osgb' | 'gridref'>('latlng');
     const [latInput, setLatInput] = useState('');
     const [lngInput, setLngInput] = useState('');
     const [osgbEasting, setOsgbEasting] = useState('');
     const [osgbNorthing, setOsgbNorthing] = useState('');
     const [gridRefInput, setGridRefInput] = useState('');
+
+    const [infoChannel, setInfoChannel] = useState<number | null>(null);
+    const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
+    const [isLongPressTriggered, setIsLongPressTriggered] = useState(false);
+
+    const handleTouchStart = (ch: number) => {
+        setIsLongPressTriggered(false);
+        const timer = setTimeout(() => {
+            setIsLongPressTriggered(true);
+            setInfoChannel(ch);
+        }, 500);
+        setLongPressTimer(timer);
+    };
+
+    const handleTouchMove = () => {
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            setLongPressTimer(null);
+        }
+    };
+
+    const handleTouchEnd = () => {
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            setLongPressTimer(null);
+        }
+    };
+
+    const handleClick = (ch: number, e: React.MouseEvent) => {
+        if (isLongPressTriggered) {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsLongPressTriggered(false);
+            return;
+        }
+        handleTvChannelCycle(ch);
+    };
 
     const channels = tvRegion === 'uk' ? UK_TV_CHANNELS : US_TV_CHANNELS;
 
@@ -91,7 +127,7 @@ const TvGrid: React.FC<TvGridProps> = ({
                             </select>
                         )}
                         <button onClick={handleBlockAllTvChannels} className="text-[9px] font-black uppercase bg-rose-500/20 text-rose-400 border border-rose-500/30 px-2 py-1 rounded hover:bg-rose-600 hover:text-white transition-all">Block All</button>
-                        <button onClick={() => { handleClearTv(); setActiveTransmitters([]); setTvChannelErpData({}); }} className="text-[9px] font-black uppercase bg-slate-800 text-slate-400 border border-slate-700 px-2 py-1 rounded hover:bg-slate-700 hover:text-white transition-all">Clear All</button>
+                        <button onClick={() => { handleClearTv(); setTvChannelErpData({}); }} className="text-[9px] font-black uppercase bg-slate-800 text-slate-400 border border-slate-700 px-2 py-1 rounded hover:bg-slate-700 hover:text-white transition-all">Clear All</button>
                     </div>
                 </div>
 
@@ -143,16 +179,7 @@ const TvGrid: React.FC<TvGridProps> = ({
                     </button>
                 </div>
                 
-                {activeTransmitters.length > 0 && (
-                    <div className="px-2 flex flex-wrap gap-2 items-center">
-                        <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Active Transmitters:</span>
-                        {activeTransmitters.map((name, index) => (
-                            <span key={`${index}-${name}`} className="text-[9px] font-black uppercase bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 px-2 py-0.5 rounded-full shadow-sm">
-                                {name}
-                            </span>
-                        ))}
-                    </div>
-                )}
+                
             </div>
 
             <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-11 gap-2">
@@ -169,7 +196,15 @@ const TvGrid: React.FC<TvGridProps> = ({
 
                     return (
                         <div key={ch} className="flex flex-col gap-1">
-                            <button onClick={() => handleTvChannelCycle(ch)} className={channelClasses} title={erpData ? `${erpData.transmitterName} (ERP: ${erpData.maxErp}kW)` : `${start}-${end} MHz`}>
+                            <button 
+                                onClick={(e) => handleClick(ch, e)}
+                                onTouchStart={() => handleTouchStart(ch)}
+                                onTouchMove={handleTouchMove}
+                                onTouchEnd={handleTouchEnd}
+                                onTouchCancel={handleTouchEnd}
+                                className={channelClasses} 
+                                title={erpData ? `${erpData.transmitterName} (ERP: ${erpData.maxErp}kW${erpData.distance ? `, Dist: ${erpData.distance}km` : ''})` : `${start}-${end} MHz`}
+                            >
                                 <div className={`text-[10px] font-black ${state === 'available' ? 'text-emerald-400' : 'text-slate-900'}`}>{ch}</div>
                                 <div className="mt-0.5 text-[7px] font-black uppercase text-white/40">
                                     {state === 'mic-only' && 'MIC'}
@@ -189,6 +224,25 @@ const TvGrid: React.FC<TvGridProps> = ({
                     );
                 })}
             </div>
+            {infoChannel !== null && (
+                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setInfoChannel(null)}>
+                    <div className="bg-slate-900 border border-slate-700 p-6 rounded-xl w-full max-w-sm text-slate-200" onClick={e => e.stopPropagation()}>
+                        <h3 className="text-lg font-bold mb-4 text-indigo-400">Channel {infoChannel} Info</h3>
+                        {tvChannelErpData?.[infoChannel] || hookErpData?.[infoChannel] ? (
+                            <div className="space-y-2">
+                                <p><span className="text-slate-500">Transmitter:</span> {(tvChannelErpData?.[infoChannel] || hookErpData?.[infoChannel])!.transmitterName}</p>
+                                <p><span className="text-slate-500">Max ERP:</span> {(tvChannelErpData?.[infoChannel] || hookErpData?.[infoChannel])!.maxErp} kW</p>
+                                {(tvChannelErpData?.[infoChannel] || hookErpData?.[infoChannel])!.distance && (
+                                    <p><span className="text-slate-500">Distance:</span> {(tvChannelErpData?.[infoChannel] || hookErpData?.[infoChannel])!.distance} km</p>
+                                )}
+                            </div>
+                        ) : (
+                            <p className="text-slate-500">No transmitter data available for this channel.</p>
+                        )}
+                        <button onClick={() => setInfoChannel(null)} className="mt-6 w-full bg-indigo-600 text-white py-2 rounded-lg font-bold">Close</button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

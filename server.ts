@@ -9,6 +9,14 @@ import Stripe from "stripe";
 import { initializeApp, cert } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { getLinkPreview } from "link-preview-js";
+import { UK_TV_CHANNELS, US_TV_CHANNELS } from "./constants.js";
+
+const calculateReceivedPowerDbm = (erpKw: number, distanceKm: number, frequencyMhz: number): number => {
+  if (distanceKm <= 0.001) return 10 * Math.log10(erpKw * 1000);
+  const txPowerDbm = 10 * Math.log10(erpKw * 1000);
+  const pathLossDb = 20 * Math.log10(distanceKm) + 20 * Math.log10(frequencyMhz) + 32.44;
+  return txPowerDbm - pathLossDb;
+};
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -632,7 +640,7 @@ async function startServer() {
       }
 
       const transmitters = JSON.parse(fs.readFileSync(transmittersPath, 'utf8'));
-      const channelData: Record<number, { maxErp: number, transmitterName: string }> = {};
+      const channelData: Record<number, { maxErp: number, transmitterName: string, distance: number }> = {};
       const coveringNames: string[] = [];
 
       const haversine = (lat1: number, lon1: number, lat2: number, lon2: number) => {
@@ -653,25 +661,13 @@ async function startServer() {
         .filter((t: any) => t.erp && t.erp >= 0.006)
         .map((t: any) => {
           const distance = haversine(lat, lng, t.lat, t.lng);
-          // Calculate a rough signal strength proxy: ERP / distance^3
-          // Add a small constant to distance to avoid division by zero
-          const signalStrength = (t.erp || 100) / Math.pow(Math.max(distance, 1), 3);
-          return { ...t, distance, signalStrength };
+          return { ...t, distance };
         })
-        .filter((t: any) => t.distance <= t.radius)
-        .sort((a: any, b: any) => b.signalStrength - a.signalStrength);
+        .filter((t: any) => t.distance <= Math.min(t.radius || 65, 65));
 
       if (covering.length > 0) {
-        const strongestSignal = covering[0].signalStrength;
-        
-        // Block transmitters whose signal is within ~8dB (1/6.6th) of the strongest signal,
-        // OR if they have a significant absolute signal strength (> 0.0005),
-        // OR if they are very close (< 15km)
-        const relevantTransmitters = covering.filter((t: any) => 
-          t.signalStrength >= strongestSignal * 0.15 || t.signalStrength > 0.0005 || t.distance < 15
-        );
-
-        relevantTransmitters.forEach((t: any) => {
+        covering.forEach((t: any) => {
+          let blocksChannel = false;
           t.channels.forEach((ch: number) => {
             // ERP Overrides based on provided CSV data
             let erp = t.erp;
@@ -719,11 +715,34 @@ async function startServer() {
               erp = overrides[t.name][ch];
             }
             
-            if (!channelData[ch] || erp > channelData[ch].maxErp) {
-              channelData[ch] = { maxErp: erp, transmitterName: t.name };
+            // Apply SIR formula
+            const range = UK_TV_CHANNELS[ch];
+            const f_MHz = range ? (range[0] + range[1]) / 2 : 600;
+            const ERP_W = erp * 1000;
+            const d_TV_km = Math.max(t.distance, 0.001); // Prevent log10(0)
+            
+            // Earth curvature / terrain penalty: 1.5 dB extra path loss per km over 40km
+            const terrainPenalty = d_TV_km > 40 ? (d_TV_km - 40) * 1.5 : 0;
+            
+            const sir = 10 
+                      - 20 * Math.log10(f_MHz) 
+                      - 20 * Math.log10(0.02) 
+                      - 10 * Math.log10(ERP_W) 
+                      + 20 * Math.log10(d_TV_km) 
+                      - 44.14
+                      + terrainPenalty;
+                      
+            if (sir < 20) {
+              blocksChannel = true;
+              if (!channelData[ch] || erp > channelData[ch].maxErp) {
+                channelData[ch] = { maxErp: erp, transmitterName: t.name, distance: parseFloat(t.distance.toFixed(1)) };
+              }
             }
           });
-          coveringNames.push(t.name);
+          
+          if (blocksChannel) {
+            coveringNames.push(t.name);
+          }
         });
       }
 
@@ -762,7 +781,7 @@ async function startServer() {
       if (transmitters.length === 0) {
         return res.json({ occupied: [] });
       }
-      const occupied = new Set<number>();
+      const channelData: Record<number, { maxErp: number, transmitterName: string, distance: number }> = {};
       const coveringNames: string[] = [];
 
       const haversine = (lat1: number, lon1: number, lat2: number, lon2: number) => {
@@ -783,32 +802,49 @@ async function startServer() {
         .filter((t: any) => !t.erp || t.erp > 0.005)
         .map((t: any) => {
           const distance = haversine(lat, lng, t.lat, t.lng);
-          // Calculate a rough signal strength proxy: ERP / distance^3
-          // Add a small constant to distance to avoid division by zero
-          const signalStrength = (t.erp || 100) / Math.pow(Math.max(distance, 1), 3);
-          return { ...t, distance, signalStrength };
+          return { ...t, distance };
         })
-        .filter((t: any) => t.distance <= t.radius)
-        .sort((a: any, b: any) => b.signalStrength - a.signalStrength);
+        .filter((t: any) => t.distance <= Math.min(t.radius || 65, 65));
 
       if (covering.length > 0) {
-        const strongestSignal = covering[0].signalStrength;
-        
-        // Block transmitters whose signal is within ~8dB (1/6.6th) of the strongest signal,
-        // OR if they have a significant absolute signal strength (> 0.0005),
-        // OR if they are very close (< 15km)
-        const relevantTransmitters = covering.filter((t: any) => 
-          t.signalStrength >= strongestSignal * 0.15 || t.signalStrength > 0.0005 || t.distance < 15
-        );
-
-        relevantTransmitters.forEach((t: any) => {
-          t.channels.forEach((ch: number) => occupied.add(ch));
-          coveringNames.push(t.name);
+        covering.forEach((t: any) => {
+          let blocksChannel = false;
+          t.channels.forEach((ch: number) => {
+            const erp = t.erp || 100;
+            
+            // Apply SIR formula
+            const range = US_TV_CHANNELS[ch];
+            const f_MHz = range ? (range[0] + range[1]) / 2 : 600;
+            const ERP_W = erp * 1000;
+            const d_TV_km = Math.max(t.distance, 0.001); // Prevent log10(0)
+            
+            // Earth curvature / terrain penalty: 1.5 dB extra path loss per km over 40km
+            const terrainPenalty = d_TV_km > 40 ? (d_TV_km - 40) * 1.5 : 0;
+            
+            const sir = 10 
+                      - 20 * Math.log10(f_MHz) 
+                      - 20 * Math.log10(0.02) 
+                      - 10 * Math.log10(ERP_W) 
+                      + 20 * Math.log10(d_TV_km) 
+                      - 44.14
+                      + terrainPenalty;
+                      
+            if (sir < 20) {
+              blocksChannel = true;
+              if (!channelData[ch] || erp > (channelData[ch]?.maxErp || 0)) {
+                channelData[ch] = { maxErp: erp, transmitterName: t.name, distance: parseFloat(t.distance.toFixed(1)) };
+              }
+            }
+          });
+          
+          if (blocksChannel) {
+            coveringNames.push(t.name);
+          }
         });
       }
 
       res.json({ 
-        occupied: Array.from(occupied).sort((a, b) => a - b),
+        occupied: channelData,
         transmitters: coveringNames
       });
     } catch (err) {

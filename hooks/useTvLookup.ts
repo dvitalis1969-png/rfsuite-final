@@ -3,11 +3,10 @@ import { TVChannelState } from '../types';
 
 export const useTvLookup = (
     tvRegion: 'uk' | 'us',
-    setTvStates: (states: Record<number, TVChannelState>) => void,
-    setActiveTransmitters: (transmitters: string[]) => void
+    setTvStates: (states: Record<number, TVChannelState>) => void
 ) => {
     const [isLocating, setIsLocating] = useState(false);
-    const [tvChannelErpData, setTvChannelErpData] = useState<Record<number, { maxErp: number, transmitterName: string }>>({});
+    const [tvChannelErpData, setTvChannelErpData] = useState<Record<number, { maxErp: number, transmitterName: string, distance?: number }>>({});
 
     const handleLookup = async (lat: number, lng: number) => {
         setIsLocating(true);
@@ -17,10 +16,6 @@ export const useTvLookup = (
             
             if (data && data.occupied) {
                 const next: Record<number, TVChannelState> = {};
-                
-                if (data.transmitters) {
-                    setActiveTransmitters(data.transmitters.map((t: any) => t.name));
-                }
                 
                 setTvChannelErpData(data.occupied);
                 

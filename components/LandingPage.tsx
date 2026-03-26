@@ -884,7 +884,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
                             <h3 className="text-xl font-black text-white uppercase tracking-wider mb-2">48 Hour Pass</h3>
                             <p className="text-slate-400 text-xs mb-6">Perfect for single events, weekend gigs, or quick coordination tasks.</p>
                             <div className="mb-8">
-                                <span className="text-4xl font-black text-white">$6.99</span>
+                                <span className="text-4xl font-black text-white">£5.99</span>
                                 <span className="text-slate-500 text-xs uppercase tracking-widest">/48 hours</span>
                             </div>
                             <ul className="space-y-4 mb-8 flex-grow">
@@ -901,7 +901,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
                             <h3 className="text-xl font-black text-white uppercase tracking-wider mb-2">7 Day Pass</h3>
                             <p className="text-slate-400 text-xs mb-6">Ideal for week-long festivals, short tours, or extended events.</p>
                             <div className="mb-8">
-                                <span className="text-4xl font-black text-white">$16.99</span>
+                                <span className="text-4xl font-black text-white">£12.99</span>
                                 <span className="text-slate-500 text-xs uppercase tracking-widest">/7 days</span>
                             </div>
                             <ul className="space-y-4 mb-8 flex-grow">
@@ -921,7 +921,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
                             <h3 className="text-xl font-black text-white uppercase tracking-wider mb-2">1 Month Pass</h3>
                             <p className="text-indigo-200/60 text-xs mb-6">Best value for ongoing projects, full-time coordinators, and busy seasons.</p>
                             <div className="mb-8">
-                                <span className="text-4xl font-black text-white">$36.99</span>
+                                <span className="text-4xl font-black text-white">£26.99</span>
                                 <span className="text-slate-500 text-xs uppercase tracking-widest">/month</span>
                             </div>
                             <ul className="space-y-4 mb-8 flex-grow">
