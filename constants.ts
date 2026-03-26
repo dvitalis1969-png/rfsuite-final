@@ -1,4 +1,4 @@
-import { EquipmentProfile, CompatibilityLevel } from './types';
+import { EquipmentProfile, CompatibilityLevel } from './types.js';
 
 export const WMAS_PRESET_PROFILES: any[] = [
     {

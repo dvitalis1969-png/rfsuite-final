@@ -143,6 +143,7 @@ const CommunityPanel: React.FC<{ projectId?: string | number; user: User | null;
 
     return () => {
       clearInterval(interval);
+      if (!auth.currentUser) return;
       const globalRef = doc(db, 'presence', 'global', 'users', uid);
       const projectRef = doc(db, 'presence', String(projectId), 'users', uid);
       setDoc(globalRef, { status: 'offline', lastSeen: serverTimestamp() }, { merge: true }).catch(console.error);
