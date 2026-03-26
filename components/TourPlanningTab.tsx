@@ -1,5 +1,6 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
+import { toast } from 'sonner';
 import { Lock, Unlock, Globe, Calendar, MapPin, CheckCircle2, Trash2, Plus, Map, Radio } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -10,6 +11,7 @@ import { getFinalThresholds, generateTourFrequencies } from '../services/rfServi
 import { UK_TV_CHANNELS, US_TV_CHANNELS, EQUIPMENT_DATABASE } from '../constants';
 import { getBlockedChannelsForZip } from '../utils/tvDatabase';
 import Card, { CardTitle } from './Card';
+import { InfoTooltip } from './InfoTooltip';
 import TvGrid from './TvGrid';
 
 interface TourPlanningTabProps {
@@ -210,7 +212,7 @@ const TourPlanningTab: React.FC<TourPlanningTabProps> = ({ state, setState, cust
 
         } catch (error) {
             console.error("Calculation failed", error);
-            alert("Frequency coordination failed. Check your constraints.");
+            toast.error("Frequency coordination failed. Check your constraints.");
         } finally {
             setIsCalculating(false);
         }
@@ -311,6 +313,7 @@ const TourPlanningTab: React.FC<TourPlanningTabProps> = ({ state, setState, cust
         });
 
         doc.save(`Tour_Book_${new Date().toISOString().split('T')[0]}.pdf`);
+        toast.success("Tour Book PDF Exported Successfully");
     };
 
     const handleExportCSV = () => {
@@ -349,7 +352,7 @@ const TourPlanningTab: React.FC<TourPlanningTabProps> = ({ state, setState, cust
         });
 
         if (rows.length === 0) {
-            alert("No frequencies to export. Please run a calculation first.");
+            toast.error("No frequencies to export. Please run a calculation first.");
             return;
         }
 
@@ -366,6 +369,7 @@ const TourPlanningTab: React.FC<TourPlanningTabProps> = ({ state, setState, cust
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        toast.success("Tour Plan Exported Successfully");
     };
 
     const handleExportClusterWWB = (clusterId: string, eqKey?: string) => {
@@ -382,7 +386,7 @@ const TourPlanningTab: React.FC<TourPlanningTabProps> = ({ state, setState, cust
         }
 
         if (allFreqs.length === 0) {
-            alert("No frequencies to export for this selection.");
+            toast.error("No frequencies to export for this selection.");
             return;
         }
 
@@ -400,13 +404,17 @@ const TourPlanningTab: React.FC<TourPlanningTabProps> = ({ state, setState, cust
         const blob = new Blob([csv], { type: 'text/csv' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a'); a.href = url; a.download = `${filename}.csv`; a.click();
+        toast.success("WWB Inventory Exported Successfully");
     };
 
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex justify-between items-center bg-slate-900/40 p-4 rounded-2xl border border-white/5 backdrop-blur-md">
                 <div>
-                    <h2 className="text-xl font-black uppercase tracking-tighter text-white">Tour Planning Engine</h2>
+                    <h2 className="text-xl font-black uppercase tracking-tighter text-white flex items-center gap-2">
+                        Tour Planning Engine
+                        <InfoTooltip content="Manage RF coordination for multi-location tours. Synchronize global gear across all venues while accounting for local TV channels and site-specific equipment." />
+                    </h2>
                     <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Multi-Location Frequency Synchronization</p>
                 </div>
                 <div className="flex gap-3">
@@ -480,7 +488,10 @@ const TourPlanningTab: React.FC<TourPlanningTabProps> = ({ state, setState, cust
                 <div className="space-y-6 animate-in fade-in slide-in-from-right-8 duration-500">
                     <Card>
                         <div className="flex justify-between items-center mb-4">
-                            <CardTitle subtitle="Base RF Cluster">Global Touring Gear</CardTitle>
+                            <CardTitle subtitle="Base RF Cluster">
+                                Global Touring Gear
+                                <InfoTooltip content="RF equipment that travels with the tour and must work at every venue. These frequencies are coordinated first and kept constant across all locations." />
+                            </CardTitle>
                         </div>
                         <div className="space-y-4">
                             <RequestManager 
@@ -517,7 +528,10 @@ const TourPlanningTab: React.FC<TourPlanningTabProps> = ({ state, setState, cust
                     </Card>
                     <Card>
                         <div className="flex justify-between items-center mb-4">
-                            <CardTitle subtitle="Base RF Cluster">Quad-State TV Grid</CardTitle>
+                            <CardTitle subtitle="Base RF Cluster">
+                                Quad-State TV Grid
+                                <InfoTooltip content="Global TV channel exclusions. Channels blocked here will be unavailable for global gear across the entire tour." />
+                            </CardTitle>
                             <div className="flex items-center gap-2">
                                 {state.region === 'us' && (
                                     <div className="flex items-center gap-1 bg-slate-900/50 p-1 rounded-lg border border-white/5">
@@ -533,7 +547,7 @@ const TourPlanningTab: React.FC<TourPlanningTabProps> = ({ state, setState, cust
                                             onClick={() => {
                                                 const blocked = getBlockedChannelsForZip(zipCode);
                                                 if (blocked.length === 0 && zipCode.length < 5) {
-                                                    alert("Please enter a valid 5-digit US Zip Code.");
+                                                    toast.error("Please enter a valid 5-digit US Zip Code.");
                                                     return;
                                                 }
                                                 const newStates: Record<number, TVChannelState> = {};
@@ -864,7 +878,7 @@ const TourPlanningTab: React.FC<TourPlanningTabProps> = ({ state, setState, cust
                                                         onClick={() => {
                                                             const blocked = getBlockedChannelsForZip(zipCode);
                                                             if (blocked.length === 0 && zipCode.length < 5) {
-                                                                alert("Please enter a valid 5-digit US Zip Code.");
+                                                                toast.error("Please enter a valid 5-digit US Zip Code.");
                                                                 return;
                                                             }
                                                             const newStates: Record<number, TVChannelState> = {};
@@ -1017,7 +1031,10 @@ const TourPlanningTab: React.FC<TourPlanningTabProps> = ({ state, setState, cust
                                                                 onClick={() => {
                                                                     setOpenExportMenuId(null);
                                                                     const freqs = state.constantSystems.frequencies || [];
-                                                                    if (freqs.length === 0) return alert("No frequencies to export.");
+                                                                    if (freqs.length === 0) {
+                                                                        toast.error("No frequencies to export.");
+                                                                        return;
+                                                                    }
                                                                     
                                                                     let csv = "Frequency,Name,Type,Band,RF Profile\n";
                                                                     const filename = `global_gear_wwb_${new Date().toISOString().slice(0, 10)}`;
@@ -1033,6 +1050,7 @@ const TourPlanningTab: React.FC<TourPlanningTabProps> = ({ state, setState, cust
                                                                     const blob = new Blob([csv], { type: 'text/csv' });
                                                                     const url = URL.createObjectURL(blob);
                                                                     const a = document.createElement('a'); a.href = url; a.download = `${filename}.csv`; a.click();
+                                                                    toast.success("Global Gear WWB Exported Successfully");
                                                                 }}
                                                                 className="w-full text-left px-3 py-2.5 hover:bg-indigo-600 rounded bg-indigo-500/30 text-[9px] font-black text-white uppercase tracking-tighter transition-all border border-indigo-400/20 shadow-sm"
                                                             >
@@ -1062,6 +1080,7 @@ const TourPlanningTab: React.FC<TourPlanningTabProps> = ({ state, setState, cust
                                                                             const blob = new Blob([csv], { type: 'text/csv' });
                                                                             const url = URL.createObjectURL(blob);
                                                                             const a = document.createElement('a'); a.href = url; a.download = `${filename}.csv`; a.click();
+                                                                            toast.success(`${profile?.name || key} WWB Exported Successfully`);
                                                                         }}
                                                                         className="w-full text-left px-3 py-2.5 hover:bg-slate-700 rounded bg-slate-950/60 border border-white/10 text-[9px] font-bold text-indigo-200 uppercase tracking-tighter transition-all"
                                                                     >

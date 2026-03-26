@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
+import { toast } from 'sonner';
 import { Project } from '../types';
 import * as dbService from '../services/dbService';
 import { exportToJson, importFromJson } from '../services/fileService';
@@ -76,7 +77,7 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ onLoadProject, onCr
                 }
                 const storedProjects = await dbService.getProjects();
                 setProjects(storedProjects.sort((a, b) => b.lastModified.getTime() - a.lastModified.getTime()));
-                alert(`Imported ${importCount} projects successfully.`);
+                toast.success(`Imported ${importCount} projects successfully.`);
             } else {
                 // Handle single project
                 const importedProject = importedData as Project;
@@ -99,7 +100,7 @@ const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ onLoadProject, onCr
                 onLoadProject(loadedProject);
             }
         } catch (error: any) {
-            alert("Error importing project: " + error.message);
+            toast.error("Error importing project: " + error.message);
         }
         
         if (fileInputRef.current) fileInputRef.current.value = "";

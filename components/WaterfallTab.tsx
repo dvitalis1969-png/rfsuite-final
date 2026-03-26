@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
+import { toast } from 'sonner';
 import { Frequency, ScanDataPoint, WMASState } from '../types';
 import Card, { CardTitle } from './Card';
 import { US_TV_CHANNELS, UK_TV_CHANNELS } from '../constants';
@@ -30,7 +31,7 @@ const WaterfallTab: React.FC<WaterfallTabProps> = ({ analyzerFrequencies, genera
 
     const loadAnalyzerFreqs = useCallback(() => {
         if (analyzerFrequencies.filter(f=>f.value > 0).length === 0) {
-            alert('No frequencies loaded in the Analyzer tab.');
+            toast.error('No frequencies loaded in the Analyzer tab.');
             return;
         }
         setFreqs(analyzerFrequencies);
@@ -42,7 +43,7 @@ const WaterfallTab: React.FC<WaterfallTabProps> = ({ analyzerFrequencies, genera
     
     const loadGeneratorFreqs = useCallback(() => {
         if (!generatorFrequencies || generatorFrequencies.length === 0) {
-            alert('No frequencies available from the Generator tab. Please generate a list first.');
+            toast.error('No frequencies available from the Generator tab. Please generate a list first.');
             return;
         }
         setFreqs(generatorFrequencies);

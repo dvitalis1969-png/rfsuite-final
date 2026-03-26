@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 import { UK_TV_CHANNELS, US_TV_CHANNELS } from '../constants';
 import { TVChannelState } from '../types';
 import { useTvLookup } from '../hooks/useTvLookup';
@@ -87,7 +88,7 @@ const TvGrid: React.FC<TvGridProps> = ({
         } else if (coordType === 'gridref') {
             const result = gridRefToWgs84(gridRefInput);
             if (!result) {
-                alert("Invalid Grid Reference format. Example: TQ 300 800");
+                toast.error("Invalid Grid Reference format. Example: TQ 300 800");
                 return;
             }
             lat = result.lat;
@@ -98,7 +99,7 @@ const TvGrid: React.FC<TvGridProps> = ({
 
     const handleLocateMe = () => {
         if (!navigator.geolocation) {
-            alert("Geolocation is not supported by your browser");
+            toast.error("Geolocation is not supported by your browser");
             return;
         }
 
@@ -108,7 +109,7 @@ const TvGrid: React.FC<TvGridProps> = ({
             },
             (err) => {
                 console.error("Geolocation error:", err);
-                alert("Failed to get your location. Please check permissions.");
+                toast.error("Failed to get your location. Please check permissions.");
             },
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );

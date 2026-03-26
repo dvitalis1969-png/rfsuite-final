@@ -1,5 +1,6 @@
 import React from 'react';
 import { Share2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface ShareButtonProps {
   title: string;
@@ -18,7 +19,7 @@ export const ShareButton: React.FC<ShareButtonProps> = ({ title, text, url }) =>
     } else {
       // Fallback: Copy to clipboard
       navigator.clipboard.writeText(url);
-      alert('Link copied to clipboard!');
+      toast.success('✅ Copied to clipboard');
     }
   };
 

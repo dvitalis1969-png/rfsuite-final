@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { toast } from 'sonner';
 import { createPortal } from 'react-dom';
 import { motion } from 'motion/react';
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, setDoc, updateDoc, arrayUnion, arrayRemove, getDocs, where, deleteDoc } from 'firebase/firestore';
@@ -155,7 +156,7 @@ export const ActivityFeed: React.FC<{ user: User | null; theme?: 'light' | 'dark
         if (!file) return;
         
         if (!file.type.startsWith('image/')) {
-            alert('Please select a valid image file.');
+            toast.error('Please select a valid image file.');
             return;
         }
 
@@ -166,7 +167,7 @@ export const ActivityFeed: React.FC<{ user: User | null; theme?: 'light' | 'dark
             setSelectedPlot(null); // Clear plot if image is selected
         } catch (error) {
             console.error('Error compressing image:', error);
-            alert('Failed to process image.');
+            toast.error('Failed to process image.');
         } finally {
             setIsUploading(false);
             if (fileInputRef.current) fileInputRef.current.value = '';

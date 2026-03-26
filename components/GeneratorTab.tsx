@@ -1,10 +1,13 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { toast } from 'sonner';
+import { useDebounce } from '../hooks/useDebounce';
 import { Frequency, Thresholds, EquipmentProfile, CompatibilityLevel, Scene, GeneratorRequest, TxType, TVChannelState, WMASState } from '../types';
 import { resolveGeneratorRequests, getCoordinationDiagnostics, CoordinationDiagnostic, getFinalThresholds } from '../services/rfService';
 import Card, { CardTitle, Placeholder } from './Card';
 import { EQUIPMENT_DATABASE, UK_TV_CHANNELS, US_TV_CHANNELS, COMPATIBILITY_PROFILES } from '../constants';
 import TvGrid from './TvGrid';
+import { InfoTooltip } from './InfoTooltip';
 
 const ManualFreqInput: React.FC<{
     value: number;
@@ -137,6 +140,21 @@ const GeneratorTab: React.FC<GeneratorTabProps> = ({
     const [diagnostic, setDiagnostic] = useState<CoordinationDiagnostic | null>(null);
     const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
     const [isWwbSubmenuOpen, setIsWwbSubmenuOpen] = useState(false);
+    
+    const [localExclusions, setLocalExclusions] = useState(exclusions);
+    const debouncedLocalExclusions = useDebounce(localExclusions, 300);
+
+    useEffect(() => {
+        if (debouncedLocalExclusions !== exclusions) {
+            setExclusions(debouncedLocalExclusions);
+        }
+    }, [debouncedLocalExclusions, exclusions, setExclusions]);
+
+    useEffect(() => {
+        if (exclusions !== localExclusions) {
+            setLocalExclusions(exclusions);
+        }
+    }, [exclusions]);
     
     const [tvRegion, setTvRegion] = useState<'uk' | 'us'>(initialRegion);
     const [tvStates, setTvStates] = useState<Record<number, TVChannelState>>(initialTvStates);
@@ -388,7 +406,7 @@ const GeneratorTab: React.FC<GeneratorTabProps> = ({
 
         } catch (e) {
             console.error("Site coordination failed:", e);
-            alert("An error occurred during site calculation.");
+            toast.error("An error occurred during site calculation.");
         } finally {
             setIsLoading(false);
             if (setIsCalculating) setIsCalculating(false);
@@ -489,7 +507,10 @@ const GeneratorTab: React.FC<GeneratorTabProps> = ({
                     <Card className="!hover:translate-y-0 !hover:shadow-xl border-2 border-indigo-500/20 md:col-span-2">
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                             <div>
-                                <CardTitle className="!mb-0">✍️ Existing Site Frequencies</CardTitle>
+                                <CardTitle className="!mb-0 flex items-center">
+                                    ✍️ Existing Site Frequencies
+                                    <InfoTooltip content="Enter frequencies of equipment already in use at the site to ensure the generated plan avoids them." />
+                                </CardTitle>
                                 <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-1">Manual Constraints & Protected Channels</p>
                             </div>
                             <label className="flex items-center gap-3 cursor-pointer p-2 bg-green-500/10 rounded-lg border border-green-500/20 self-end sm:self-auto">
@@ -500,7 +521,10 @@ const GeneratorTab: React.FC<GeneratorTabProps> = ({
                                     className="w-4 h-4 rounded accent-green-500" 
                                 />
                                 <div className="flex flex-col">
-                                    <span className="text-white text-[10px] font-black uppercase tracking-tighter leading-none">Parameters Unknown</span>
+                                    <span className="text-white text-[10px] font-black uppercase tracking-tighter leading-none flex items-center">
+                                        Parameters Unknown
+                                        <InfoTooltip content="Check this if you don't know the exact equipment models for the existing frequencies. It will only calculate fundamental spacing, ignoring complex IMD products for these specific frequencies." />
+                                    </span>
                                     <span className="text-[8px] text-white/70 font-bold uppercase mt-0.5">Use Fundamental Spacing Only</span>
                                 </div>
                             </label>
@@ -579,7 +603,10 @@ const GeneratorTab: React.FC<GeneratorTabProps> = ({
 
                         <div className="p-4 bg-slate-950/50 border border-white/5 rounded-2xl mb-4">
                             <div className="flex justify-between items-center mb-3">
-                                <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Site Protection Parameters</span>
+                                <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest flex items-center">
+                                    Site Protection Parameters
+                                    <InfoTooltip content="Set the minimum frequency spacing required between the generated plan and the existing site frequencies." />
+                                </span>
                                 {ignoreManualIMD && <span className="text-[8px] text-green-400 font-black uppercase">IMD Disabled</span>}
                             </div>
                             <div className={`grid grid-cols-3 gap-4 transition-opacity ${ignoreManualIMD ? 'opacity-20 pointer-events-none' : 'opacity-100'}`}>
@@ -839,11 +866,17 @@ const GeneratorTab: React.FC<GeneratorTabProps> = ({
                 </Card>
 
                 <Card className="order-2 lg:order-none">
-                    <CardTitle>⚙️ Site Parameters</CardTitle>
+                    <CardTitle className="flex items-center">
+                        ⚙️ Site Parameters
+                        <InfoTooltip content="Define global constraints that apply to the entire coordination plan." />
+                    </CardTitle>
                     <div className="space-y-6">
                         <div>
-                            <label className="text-xs text-slate-500 uppercase font-black mb-2 block">Custom Exclusions (MHz)</label>
-                            <textarea value={exclusions} onChange={e => setExclusions(e.target.value)} rows={3} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-slate-200 text-sm font-mono" placeholder="e.g. 482.000-485.500" />
+                            <label className="text-xs text-slate-500 uppercase font-black mb-2 flex items-center">
+                                Custom Exclusions (MHz)
+                                <InfoTooltip content="Enter frequency ranges to avoid, separated by commas. Format: start-end (e.g., 482.000-485.500)." />
+                            </label>
+                            <textarea value={localExclusions} onChange={e => setLocalExclusions(e.target.value)} rows={3} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-slate-200 text-sm font-mono" placeholder="e.g. 482.000-485.500" />
                         </div>
                         
                         <div className="p-4 bg-slate-900/50 rounded-xl border border-slate-700">

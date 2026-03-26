@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 import { Frequency, Scene } from '../types';
 import Card, { CardTitle } from './Card';
 
@@ -23,7 +24,7 @@ const TimelineTab: React.FC<TimelineTabProps> = ({ frequencies, scenes, setScene
 
     const addScene = () => {
         if (!newSceneName.trim()) {
-            alert("Please enter a name for the new scene.");
+            toast.error("Please enter a name for the new scene.");
             return;
         }
         const newScene: Scene = {
@@ -65,7 +66,7 @@ const TimelineTab: React.FC<TimelineTabProps> = ({ frequencies, scenes, setScene
 
     const handleExport = () => {
         if (scenes.length === 0) {
-            alert('No scenes to export.');
+            toast.error('No scenes to export.');
             return;
         }
         let csvContent = "data:text/csv;charset=utf-8,Scene Name,Frequency ID,Frequency Label,Frequency (MHz)\n";
@@ -112,7 +113,7 @@ const TimelineTab: React.FC<TimelineTabProps> = ({ frequencies, scenes, setScene
             });
             const newScenes = Array.from(scenesMap.values());
             setScenes(newScenes);
-            alert(`Imported ${newScenes.length} scenes.`);
+            toast.success(`Imported ${newScenes.length} scenes.`);
         };
         reader.readAsText(file);
     };

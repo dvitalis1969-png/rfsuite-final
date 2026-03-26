@@ -1,5 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { toast } from 'sonner';
 import Card, { CardTitle, Placeholder } from './Card';
+import { InfoTooltip } from './InfoTooltip';
 import { Frequency, Thresholds, EquipmentProfile, CompatibilityLevel, BandState, BandResult, TVChannelState, TxType, WMASState } from '../types';
 import { generateCompatibleFreqs, getFinalThresholds } from '../services/rfService';
 import { EQUIPMENT_DATABASE, COMPATIBILITY_PROFILES, UK_TV_CHANNELS } from '../constants';
@@ -212,7 +214,7 @@ const MultiBandTab: React.FC<MultiBandTabProps> = ({ customEquipment, bands, set
             setResults(bandResults);
         } catch (error) {
             console.error("Calculation failed:", error);
-            alert("An error occurred during calculation. Please check your inputs.");
+            toast.error("An error occurred during calculation. Please check your inputs.");
         } finally {
             setIsCalculating(false);
         }
@@ -222,7 +224,10 @@ const MultiBandTab: React.FC<MultiBandTabProps> = ({ customEquipment, bands, set
 
     return (
         <Card fullWidth>
-            <CardTitle>🎛️ Multi-Band Coordination</CardTitle>
+            <CardTitle>
+                🎛️ Multi-Band Coordination
+                <InfoTooltip content="Coordinate multiple RF bands simultaneously. Each band can have its own equipment profile and spacing requirements while respecting global intermodulation constraints." />
+            </CardTitle>
             <p className="text-slate-300 mb-4 text-sm">Coordinate frequencies across multiple RF bands simultaneously with granular equipment control.</p>
 
             <div className="space-y-4 mb-6">
@@ -235,7 +240,10 @@ const MultiBandTab: React.FC<MultiBandTabProps> = ({ customEquipment, bands, set
                                     <div className="absolute top-2 right-2">
                                         <button onClick={() => removeBand(i)} className="text-slate-500 hover:text-red-400" title="Remove Band">&times;</button>
                                     </div>
-                                    <h4 className="text-blue-300 text-sm font-bold mb-3">Band {i + 1} Configuration</h4>
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <h4 className="text-blue-300 text-sm font-bold">Band {i + 1} Configuration</h4>
+                                        <InfoTooltip content={`Configure the parameters for RF Band ${i + 1}. You can select specific equipment profiles or define custom frequency ranges.`} />
+                                    </div>
                                     
                                     <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-3">
                                         <div className="lg:col-span-2">
@@ -258,7 +266,10 @@ const MultiBandTab: React.FC<MultiBandTabProps> = ({ customEquipment, bands, set
                                             <input type="number" value={band.count} onChange={e => handleBandUpdate(i, { count: e.target.value })} min="1" className="w-full bg-slate-800 border border-blue-500/30 rounded-md p-2 text-slate-200 text-sm" />
                                         </div>
                                         <div>
-                                            <label className="text-slate-400 text-xs block mb-1">Compatibility</label>
+                                            <label className="text-slate-400 text-xs flex items-center gap-1 mb-1">
+                                                Compatibility
+                                                <InfoTooltip content="Standard: Standard IMD spacing. More Robust: Increased spacing for critical systems. High Density: Reduced spacing for maximum channel count (requires linear equipment)." />
+                                            </label>
                                             <select 
                                                 value={band.compatibilityLevel} 
                                                 onChange={e => handleBandUpdate(i, { compatibilityLevel: e.target.value as CompatibilityLevel })} 
@@ -288,7 +299,10 @@ const MultiBandTab: React.FC<MultiBandTabProps> = ({ customEquipment, bands, set
                                         
                                         <div className="grid grid-cols-3 gap-3">
                                             <div className="flex flex-col gap-1">
-                                                <label className="text-[9px] text-slate-500 uppercase font-bold">F-F Guard (MHz)</label>
+                                                <label className="text-[9px] text-slate-500 uppercase font-bold flex items-center gap-1">
+                                                    F-F Guard (MHz)
+                                                    <InfoTooltip content="Fundamental to Fundamental spacing. The minimum distance between two carrier frequencies." />
+                                                </label>
                                                 <input 
                                                     type="number" 
                                                     step="0.001" 
@@ -299,7 +313,10 @@ const MultiBandTab: React.FC<MultiBandTabProps> = ({ customEquipment, bands, set
                                                 />
                                             </div>
                                             <div className="flex flex-col gap-1">
-                                                <label className="text-[9px] text-slate-500 uppercase font-bold">2-Tone IMD (MHz)</label>
+                                                <label className="text-[9px] text-slate-500 uppercase font-bold flex items-center gap-1">
+                                                    2-Tone IMD (MHz)
+                                                    <InfoTooltip content="2-Tone 3rd Order Intermodulation spacing. Protects against products generated by two transmitters." />
+                                                </label>
                                                 <input 
                                                     type="number" 
                                                     step="0.001" 
@@ -310,7 +327,10 @@ const MultiBandTab: React.FC<MultiBandTabProps> = ({ customEquipment, bands, set
                                                 />
                                             </div>
                                             <div className="flex flex-col gap-1">
-                                                <label className="text-[9px] text-slate-500 uppercase font-bold">3-Tone IMD (MHz)</label>
+                                                <label className="text-[9px] text-slate-500 uppercase font-bold flex items-center gap-1">
+                                                    3-Tone IMD (MHz)
+                                                    <InfoTooltip content="3-Tone 3rd Order Intermodulation spacing. Protects against products generated by three transmitters." />
+                                                </label>
                                                 <input 
                                                     type="number" 
                                                     step="0.001" 

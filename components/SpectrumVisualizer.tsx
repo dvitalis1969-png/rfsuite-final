@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { Frequency, ScanDataPoint, WMASState } from '../types';
 import Card, { CardTitle } from './Card';
 import { US_TV_CHANNELS, UK_TV_CHANNELS } from '../constants';
+import { InfoTooltip } from './InfoTooltip';
 
 interface SpectrumVisualizerProps {
     frequencies: Frequency[];
@@ -77,6 +78,14 @@ const SpectrumVisualizer: React.FC<SpectrumVisualizerProps> = ({
         startFreq: number 
     } | null>(null);
     const [currentExclusion, setCurrentExclusion] = useState<{ min: number, max: number } | null>(null);
+
+    // Touch Interaction State
+    const [touchState, setTouchState] = useState<{
+        startDist: number;
+        startCenter: number;
+        startMin: number;
+        startMax: number;
+    } | null>(null);
 
     // Focus Guard to prevent state updates from overwriting user typing
     const isCenterFreqFocused = useRef(false);
@@ -258,6 +267,75 @@ const SpectrumVisualizer: React.FC<SpectrumVisualizerProps> = ({
         setDragState(null);
         setCurrentExclusion(null);
         (e.target as Element).releasePointerCapture(e.pointerId);
+    };
+
+    const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+        if (e.touches.length === 2) {
+            e.preventDefault(); // Prevent default browser zoom/pan
+            const touch1 = e.touches[0];
+            const touch2 = e.touches[1];
+            const dist = Math.hypot(touch1.clientX - touch2.clientX, touch1.clientY - touch2.clientY);
+            const center = (touch1.clientX + touch2.clientX) / 2;
+            setTouchState({
+                startDist: dist,
+                startCenter: center,
+                startMin: range.min,
+                startMax: range.max
+            });
+        }
+    };
+
+    const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+        if (e.touches.length === 2 && touchState && canvasRef.current) {
+            e.preventDefault(); // Prevent default browser zoom/pan
+            const touch1 = e.touches[0];
+            const touch2 = e.touches[1];
+            const dist = Math.hypot(touch1.clientX - touch2.clientX, touch1.clientY - touch2.clientY);
+            const center = (touch1.clientX + touch2.clientX) / 2;
+
+            const scale = touchState.startDist / dist;
+            const canvas = canvasRef.current;
+            const rect = canvas.getBoundingClientRect();
+            const padding = { left: 45, right: 15 };
+            const chartWidth = canvas.width - padding.left - padding.right;
+            
+            // Calculate frequency at the center point of the pinch
+            const centerRatio = (touchState.startCenter - rect.left - padding.left) / chartWidth;
+            const centerFreq = touchState.startMin + centerRatio * (touchState.startMax - touchState.startMin);
+
+            // Calculate new span
+            const startSpan = touchState.startMax - touchState.startMin;
+            const newSpan = startSpan * scale;
+
+            // Calculate new min and max keeping the center frequency at the same relative position
+            let newMin = centerFreq - centerRatio * newSpan;
+            let newMax = centerFreq + (1 - centerRatio) * newSpan;
+
+            // Handle panning (shift in center point)
+            const panShiftX = center - touchState.startCenter;
+            const panShiftFreq = (panShiftX / chartWidth) * newSpan;
+
+            newMin -= panShiftFreq;
+            newMax -= panShiftFreq;
+
+            // Ensure minimum span
+            if (newMax - newMin < 0.1) {
+                const mid = (newMin + newMax) / 2;
+                newMin = mid - 0.05;
+                newMax = mid + 0.05;
+            }
+
+            setRange({
+                min: parseFloat(newMin.toFixed(5)),
+                max: parseFloat(newMax.toFixed(5))
+            });
+        }
+    };
+
+    const handleTouchEnd = (e: React.TouchEvent<HTMLCanvasElement>) => {
+        if (e.touches.length < 2) {
+            setTouchState(null);
+        }
     };
 
     const handleHoverTooltip = (event: React.PointerEvent<HTMLCanvasElement>) => {
@@ -460,7 +538,10 @@ const SpectrumVisualizer: React.FC<SpectrumVisualizerProps> = ({
 
     return (
         <Card fullWidth>
-            <CardTitle>{title}</CardTitle>
+            <CardTitle className="flex items-center">
+                {title}
+                <InfoTooltip content="Visualize the calculated RF plan, including fundamental frequencies and intermodulation products. Use Shift+Drag to draw exclusion zones, or pinch to zoom on touch devices." />
+            </CardTitle>
             
             <div className="bg-slate-900/50 p-3 rounded-lg mb-3 space-y-3">
                 <div className="flex flex-wrap gap-4 items-center justify-between">
@@ -475,23 +556,28 @@ const SpectrumVisualizer: React.FC<SpectrumVisualizerProps> = ({
                             <label className="flex items-center gap-2 cursor-pointer group">
                                 <input type="checkbox" checked={showLabels} onChange={e => setShowLabels(e.target.checked)} className="w-4 h-4 rounded accent-indigo-500 bg-slate-700" />
                                 <span className="text-[10px] text-slate-400 font-bold uppercase group-hover:text-white transition-colors">Labels</span>
+                                <InfoTooltip content="Toggle frequency and equipment labels on the chart." />
                             </label>
                             <label className="flex items-center gap-2 cursor-pointer group">
                                 <input type="checkbox" checked={showTwoTone} onChange={e => setShowTwoTone(e.target.checked)} className="w-4 h-4 rounded accent-red-500 bg-slate-700" />
                                 <span className="text-[10px] text-slate-400 font-bold uppercase group-hover:text-white transition-colors">2-Tone</span>
+                                <InfoTooltip content="Toggle visibility of 2-Tone 3rd Order Intermodulation products." />
                             </label>
                             <label className="flex items-center gap-2 cursor-pointer group">
                                 <input type="checkbox" checked={showThreeTone} onChange={e => setShowThreeTone(e.target.checked)} className="w-4 h-4 rounded accent-purple-500 bg-slate-700" />
                                 <span className="text-[10px] text-slate-400 font-bold uppercase group-hover:text-white transition-colors">3-Tone</span>
+                                <InfoTooltip content="Toggle visibility of 3-Tone 3rd Order Intermodulation products." />
                             </label>
                             <label className="flex items-center gap-2 cursor-pointer group">
                                 <input type="checkbox" checked={overlayChannels} onChange={e => setOverlayChannels(e.target.checked)} className="w-4 h-4 rounded accent-blue-500 bg-slate-700" />
                                 <span className="text-[10px] text-slate-400 font-bold uppercase group-hover:text-white transition-colors">TV</span>
+                                <InfoTooltip content="Overlay TV channel grids for the selected region." />
                             </label>
                         </div>
                         
                         <div className="flex items-center gap-2 pr-4 border-r border-slate-700/50">
                             <span className="text-[9px] font-black text-slate-500 uppercase tracking-tighter">Center</span>
+                            <InfoTooltip content="The center frequency of the analyzer view. Adjust using the arrows or by typing a value." />
                             <div className="flex items-center bg-slate-700 rounded-lg p-0.5 border border-slate-600 shadow-inner">
                                 <button onClick={() => handleScroll('left')} className="p-1.5 px-2.5 rounded bg-slate-600/50 text-slate-300 hover:bg-slate-500 transition-colors text-xs font-bold">&larr;</button>
                                 <input 
@@ -516,6 +602,7 @@ const SpectrumVisualizer: React.FC<SpectrumVisualizerProps> = ({
 
                         <div className="flex items-center gap-2">
                             <span className="text-[9px] font-black text-slate-500 uppercase tracking-tighter">Span</span>
+                            <InfoTooltip content="The total frequency width visible on the chart. Adjust to zoom in or out." />
                             <div className="flex items-center bg-slate-700 rounded-lg p-0.5 border border-slate-600 shadow-inner">
                                 <button onClick={() => handleSpanChange('decrease')} className="px-2 py-1 text-white rounded text-[10px] font-black hover:bg-slate-500 transition-colors">-</button>
                                 <span className="text-[10px] text-cyan-400 font-mono w-16 text-center font-black">{(range.max - range.min).toFixed(1)}M</span>
@@ -533,6 +620,11 @@ const SpectrumVisualizer: React.FC<SpectrumVisualizerProps> = ({
             </div>
 
             <div className="relative w-full h-[300px] md:h-[500px] bg-black rounded-lg border border-indigo-500/30 overflow-hidden shadow-inner">
+                <div className="absolute top-2 right-2 bg-slate-900/80 border border-slate-700 text-slate-400 text-[10px] uppercase font-bold px-2 py-1 rounded pointer-events-none z-10 backdrop-blur-sm flex items-center gap-2">
+                    <span>💡 Tip:</span>
+                    <span className="text-yellow-500">Shift + Drag</span>
+                    <span>to draw exclusion zones</span>
+                </div>
                 {tooltip && (
                     <div 
                         className="absolute z-20 p-2.5 text-white bg-slate-800/95 border border-indigo-400/50 rounded-lg shadow-xl pointer-events-none backdrop-blur-sm" 
@@ -547,12 +639,16 @@ const SpectrumVisualizer: React.FC<SpectrumVisualizerProps> = ({
                 )}
                 <canvas 
                     ref={canvasRef} 
-                    className={`w-full h-full ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+                    className={`w-full h-full ${isDragging ? 'cursor-grabbing' : 'cursor-grab'} touch-none`}
                     onPointerDown={handlePointerDown}
                     onPointerMove={handlePointerMove}
                     onPointerUp={handlePointerUp}
                     onPointerCancel={handlePointerUp}
                     onPointerLeave={handlePointerUp}
+                    onTouchStart={handleTouchStart}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
+                    onTouchCancel={handleTouchEnd}
                 />
             </div>
         </Card>

@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { toast } from 'sonner';
 import Card, { CardTitle, Placeholder } from './Card';
 import { DuplexPair, ZoneConfig, SiteMapState, ZonalResult, TxType, TalkbackIntermods, IntermodProduct, Conflict, Frequency, Thresholds, TalkbackMode } from '../types';
 import { TALKBACK_DEFINITIONS, TALKBACK_FIXED_PAIRS, DISCRETE_TALKBACK_PAIRS, TALKBACK_FORBIDDEN_RANGES_BY_COUNTRY } from '../constants';
@@ -347,7 +348,7 @@ const ZonalTalkbackTab: React.FC<ZonalTalkbackTabProps> = ({
                 console.log('Calculation aborted');
             } else {
                 console.error(error); 
-                alert("Error in zonal calculation."); 
+                toast.error("Error in zonal calculation."); 
             }
         } finally { 
             setIsLoading(false); 

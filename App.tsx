@@ -32,6 +32,10 @@ import UserPresenceList from './components/UserPresenceList';
 import ProfilePopover from './components/ProfilePopover';
 import { ActivityFeed } from './components/ActivityFeed';
 
+import { useLocalStorage } from './hooks/useLocalStorage';
+import { useDebounce } from './hooks/useDebounce';
+import { toast, Toaster } from 'sonner';
+
 // RF Toolkit Component Imports
 import ProximitySimulatorTab from './components/ProximitySimulatorTab';
 import InterferenceDemoTab from './components/InterferenceDemoTab';
@@ -145,44 +149,44 @@ const App: React.FC = () => {
     const isLibraryLoaded = useRef(false);
 
     const [activeApp, setActiveApp] = useState<AppCategory | null>(null);
-    const [activeTab, setActiveTab] = useState<TabID>('analyzer');
-    const [isSunlightMode, setIsSunlightMode] = useState(false);
+    const [activeTab, setActiveTab] = useLocalStorage<TabID>('app_activeTab', 'analyzer');
+    const [isSunlightMode, setIsSunlightMode] = useLocalStorage('app_isSunlightMode', false);
     
     const [frequencies, setFrequencies] = useState<Frequency[]>(initialFrequencies);
     const [thresholds, setThresholds] = useState<Thresholds>(initialThresholds);
     const [generatorFrequencies, setGeneratorFrequencies] = useState<Frequency[] | null>(null);
     
-    const [equipmentOverrides, setEquipmentOverrides] = useState<Record<string, Partial<Thresholds>>>({});
-    const [customEquipment, setCustomEquipment] = useState<EquipmentProfile[]>([]);
+    const [equipmentOverrides, setEquipmentOverrides] = useLocalStorage<Record<string, Partial<Thresholds>>>('app_equipmentOverrides', {});
+    const [customEquipment, setCustomEquipment] = useLocalStorage<EquipmentProfile[]>('app_customEquipment', []);
     
-    const [festivalNumZones, setFestivalNumZones] = useState(initialFestivalState.numZones);
-    const [festivalZoneConfigs, setFestivalZoneConfigs] = useState(initialFestivalState.zoneConfigs);
-    const [festivalDistances, setFestivalDistances] = useState(initialFestivalState.distances);
-    const [festivalActs, setFestivalActs] = useState<FestivalAct[]>(initialFestivalState.acts);
-    const [festivalConstantSystems, setFestivalConstantSystems] = useState<ConstantSystemRequest[]>(initialFestivalState.constantSystems);
-    const [festivalHouseSystems, setFestivalHouseSystems] = useState<ConstantSystemRequest[]>(initialFestivalState.houseSystems);
-    const [festivalSiteMap, setFestivalSiteMap] = useState<SiteMapState>(initialFestivalState.siteMapState);
-    const [festivalMatrix, setFestivalMatrix] = useState<boolean[][]>(initialFestivalState.compatibilityMatrix);
-    const [festivalTvStates, setFestivalTvStates] = useState<Record<number, TVChannelState>>(initialFestivalState.tvChannelStates || {});
+    const [festivalNumZones, setFestivalNumZones] = useLocalStorage('app_festivalNumZones', initialFestivalState.numZones);
+    const [festivalZoneConfigs, setFestivalZoneConfigs] = useLocalStorage('app_festivalZoneConfigs', initialFestivalState.zoneConfigs);
+    const [festivalDistances, setFestivalDistances] = useLocalStorage('app_festivalDistances', initialFestivalState.distances);
+    const [festivalActs, setFestivalActs] = useLocalStorage<FestivalAct[]>('app_festivalActs', initialFestivalState.acts);
+    const [festivalConstantSystems, setFestivalConstantSystems] = useLocalStorage<ConstantSystemRequest[]>('app_festivalConstantSystems', initialFestivalState.constantSystems);
+    const [festivalHouseSystems, setFestivalHouseSystems] = useLocalStorage<ConstantSystemRequest[]>('app_festivalHouseSystems', initialFestivalState.houseSystems);
+    const [festivalSiteMap, setFestivalSiteMap] = useLocalStorage<SiteMapState>('app_festivalSiteMap', initialFestivalState.siteMapState);
+    const [festivalMatrix, setFestivalMatrix] = useLocalStorage<boolean[][]>('app_festivalMatrix', initialFestivalState.compatibilityMatrix);
+    const [festivalTvStates, setFestivalTvStates] = useLocalStorage<Record<number, TVChannelState>>('app_festivalTvStates', initialFestivalState.tvChannelStates || {});
 
-    const [multizoneNumZones, setMultizoneNumZones] = useState(initialMultizoneState.numZones);
-    const [multizoneZoneConfigs, setMultizoneZoneConfigs] = useState(initialMultizoneState.zoneConfigs);
-    const [multizoneGroups, setMultizoneGroups] = useState(initialMultizoneState.equipmentGroups || []);
-    const [multizoneManualFrequencies, setMultizoneManualFrequencies] = useState<Frequency[]>(initialMultizoneState.manualFrequencies || []);
-    const [multizoneDistances, setMultizoneDistances] = useState(initialMultizoneState.distances);
-    const [multizoneResults, setMultizoneResults] = useState(initialMultizoneState.results);
-    const [multizoneSiteMap, setMultizoneSiteMap] = useState<SiteMapState>(initialMultizoneState.siteMapState);
-    const [multizoneMatrix, setMultizoneMatrix] = useState<boolean[][]>(initialMultizoneState.compatibilityMatrix);
-    const [multizoneTvStates, setMultizoneTvStates] = useState<Record<number, TVChannelState>>(initialMultizoneState.tvChannelStates || {});
+    const [multizoneNumZones, setMultizoneNumZones] = useLocalStorage('app_multizoneNumZones', initialMultizoneState.numZones);
+    const [multizoneZoneConfigs, setMultizoneZoneConfigs] = useLocalStorage('app_multizoneZoneConfigs', initialMultizoneState.zoneConfigs);
+    const [multizoneGroups, setMultizoneGroups] = useLocalStorage('app_multizoneGroups', initialMultizoneState.equipmentGroups || []);
+    const [multizoneManualFrequencies, setMultizoneManualFrequencies] = useLocalStorage<Frequency[]>('app_multizoneManualFrequencies', initialMultizoneState.manualFrequencies || []);
+    const [multizoneDistances, setMultizoneDistances] = useLocalStorage('app_multizoneDistances', initialMultizoneState.distances);
+    const [multizoneResults, setMultizoneResults] = useLocalStorage('app_multizoneResults', initialMultizoneState.results);
+    const [multizoneSiteMap, setMultizoneSiteMap] = useLocalStorage<SiteMapState>('app_multizoneSiteMap', initialMultizoneState.siteMapState);
+    const [multizoneMatrix, setMultizoneMatrix] = useLocalStorage<boolean[][]>('app_multizoneMatrix', initialMultizoneState.compatibilityMatrix);
+    const [multizoneTvStates, setMultizoneTvStates] = useLocalStorage<Record<number, TVChannelState>>('app_multizoneTvStates', initialMultizoneState.tvChannelStates || {});
 
-    const [commsNumZones, setCommsNumZones] = useState(initialCommsState.numZones);
-    const [commsZoneConfigs, setCommsZoneConfigs] = useState<ZoneConfig[]>(initialCommsState.zoneConfigs);
-    const [commsDistances, setCommsDistances] = useState<number[][]>(initialCommsState.distances);
-    const [commsCompatibilityMatrix, setCommsCompatibilityMatrix] = useState<boolean[][]>(initialCommsState.compatibilityMatrix);
-    const [commsSiteMapState, setCommsSiteMapState] = useState<SiteMapState>(initialCommsState.siteMapState);
-    const [tbManualPairs, setTbManualPairs] = useState<DuplexPair[]>(initialCommsState.manualPairs);
-    const [tbResults, setTbResults] = useState<DuplexPair[] | null>(initialCommsState.results);
-    const [zonalResults, setZonalResults] = useState<ZonalResult[] | null>(null);
+    const [commsNumZones, setCommsNumZones] = useLocalStorage('app_commsNumZones', initialCommsState.numZones);
+    const [commsZoneConfigs, setCommsZoneConfigs] = useLocalStorage<ZoneConfig[]>('app_commsZoneConfigs', initialCommsState.zoneConfigs);
+    const [commsDistances, setCommsDistances] = useLocalStorage<number[][]>('app_commsDistances', initialCommsState.distances);
+    const [commsCompatibilityMatrix, setCommsCompatibilityMatrix] = useLocalStorage<boolean[][]>('app_commsCompatibilityMatrix', initialCommsState.compatibilityMatrix);
+    const [commsSiteMapState, setCommsSiteMapState] = useLocalStorage<SiteMapState>('app_commsSiteMapState', initialCommsState.siteMapState);
+    const [tbManualPairs, setTbManualPairs] = useLocalStorage<DuplexPair[]>('app_tbManualPairs', initialCommsState.manualPairs);
+    const [tbResults, setTbResults] = useLocalStorage<DuplexPair[] | null>('app_tbResults', initialCommsState.results);
+    const [zonalResults, setZonalResults] = useLocalStorage<ZonalResult[] | null>('app_zonalResults', null);
 
     const [scanData, setScanData] = useState<ScanDataPoint[] | null>(null);
     const [inclusionRanges, setInclusionRanges] = useState<{ min: number; max: number }[] | null>(null);
@@ -222,8 +226,8 @@ const App: React.FC = () => {
         }
     };
 
-    const [tourPlanningState, setTourPlanningState] = useState<TourPlanningState>(initialTourPlanningState);
-    const [wmasState, setWmasState] = useState<WMASState>(initialWMASState);
+    const [tourPlanningState, setTourPlanningState] = useLocalStorage<TourPlanningState>('app_tourPlanningState', initialTourPlanningState);
+    const [wmasState, setWmasState] = useLocalStorage<WMASState>('app_wmasState', initialWMASState);
     const [previewEquipment, setPreviewEquipment] = useState<{ profile: EquipmentProfile; frequency: number } | null>(null);
 
     const [isProjectDashboardOpen, setProjectDashboardOpen] = useState(false);
@@ -243,11 +247,11 @@ const App: React.FC = () => {
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         if (params.get('checkout') === 'success') {
-            alert('Payment successful! Your account is being upgraded.');
+            toast.success('Payment successful! Your account is being upgraded.');
             setIsAccountDashboardOpen(true);
             window.history.replaceState({}, document.title, window.location.pathname);
         } else if (params.get('checkout') === 'cancel') {
-            alert('Payment was cancelled.');
+            toast.error('Payment was cancelled.');
             setIsAccountDashboardOpen(true);
             window.history.replaceState({}, document.title, window.location.pathname);
         } else if (params.get('portal') === 'return') {
@@ -588,7 +592,7 @@ const App: React.FC = () => {
         } catch (error) {
             console.error("Save failed", error);
             setSaveStatus('idle');
-            alert("Database write error.");
+            toast.error("Database write error.");
         }
         setTimeout(() => setSaveStatus('idle'), 3000);
     };
@@ -623,7 +627,7 @@ const App: React.FC = () => {
         } catch (error) {
             console.error("Save failed", error);
             setSaveStatus('idle');
-            alert("Database write error.");
+            toast.error("Database write error.");
         }
         setTimeout(() => setSaveStatus('idle'), 3000);
     };
@@ -988,6 +992,7 @@ const App: React.FC = () => {
                     </div>
                 </div>
             </div>
+            <Toaster theme="dark" position="bottom-right" />
         </div>
     );
 };

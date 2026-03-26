@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { toast } from 'sonner';
 import { ScanDataPoint, TVChannelState } from '../types';
 import { UK_TV_CHANNELS, US_TV_CHANNELS } from '../constants';
 import Card, { CardTitle } from './Card';
 import { HardwareSetupGuide } from './HardwareSetupGuide';
 import { db, auth } from '../src/lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
+import { InfoTooltip } from './InfoTooltip';
 
 interface LiveScanAnalyzerProps {
     scanData: ScanDataPoint[] | null;
@@ -172,11 +174,11 @@ const LiveScanAnalyzer: React.FC<LiveScanAnalyzerProps> = ({
                 try { await port.close(); } catch (e) {}
             }
             if (err.name === 'SecurityError' || err.message.includes('permissions policy')) {
-                alert(`Permission Error: The browser is blocking access to the USB port. \n\nEnsure you are using the app in a full browser tab (not the AI Studio preview) and using a desktop browser like Chrome.`);
+                toast.error(`Permission Error: The browser is blocking access to the USB port. Ensure you are using the app in a full browser tab and a desktop browser like Chrome.`);
             } else if (err.name === 'NotFoundError') {
                 // User cancelled
             } else {
-                alert(`Failed to connect: ${err.message}`);
+                toast.error(`Failed to connect: ${err.message}`);
             }
         } finally {
             setIsConnecting(false);
@@ -537,11 +539,14 @@ const LiveScanAnalyzer: React.FC<LiveScanAnalyzerProps> = ({
     };
 
     return (
-        <Card className={`relative z-10 overflow-hidden flex flex-col ${className}`}>
+        <Card className={`relative z-10 flex flex-col ${className}`}>
             <div className="flex justify-between items-start mb-4">
                 <div className="flex items-start gap-3">
                     <div className="flex flex-col gap-1">
-                        <CardTitle className="!mb-0 text-base">📡 Live Site Scan Integration</CardTitle>
+                        <CardTitle className="!mb-0 text-base flex items-center">
+                            📡 Live Site Scan Integration
+                            <InfoTooltip content="Connect a TinySA device via USB to view real-time RF spectrum data. The amber line sets the threshold above which frequencies are considered occupied." />
+                        </CardTitle>
                         <p className="text-[9px] text-slate-500 uppercase font-bold tracking-tighter">
                             Real-time spectrum analysis. Drag amber line to set exclusion threshold.
                         </p>

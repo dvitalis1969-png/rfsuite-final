@@ -1,10 +1,12 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { toast } from 'sonner';
 import { createPortal } from 'react-dom';
 import { Frequency, Thresholds, AnalysisResult, Conflict, Scene, TxType, FrequencySnapshot, ScanDataPoint, BandResult, TVChannelState, WMASState } from '../types';
 import { checkCompatibility, checkCompatibilityTimeline } from '../services/rfService';
 import { exportToJson, importFromJson } from '../services/fileService';
 import Card, { CardTitle, Placeholder } from './Card';
 import SpectrumVisualizer from './SpectrumVisualizer';
+import { InfoTooltip } from './InfoTooltip';
 
 const FrequencyValueInput: React.FC<{
     value: number;
@@ -102,7 +104,7 @@ const AnalyzerTab: React.FC<AnalyzerTabProps> = ({ frequencies, setFrequencies, 
     const analyzeFrequencies = () => {
         const activeFreqs = frequencies.filter(f => f.value > 0);
         if (activeFreqs.length < 2) {
-            alert('Insufficient data. Provide ≥2 active carriers.');
+            toast.error('Insufficient data. Provide ≥2 active carriers.');
             return;
         }
         const ruleBufferedFreqs = activeFreqs.map(f => ({ ...f, manualThresholds: thresholds }));
@@ -125,7 +127,7 @@ const AnalyzerTab: React.FC<AnalyzerTabProps> = ({ frequencies, setFrequencies, 
             if (data.frequencies) setFrequencies(data.frequencies);
             if (data.thresholds) setThresholds(data.thresholds);
             if (data.tvChannelStates && setTvChannelStates) setTvChannelStates(data.tvChannelStates);
-        } catch (error) { alert("Load failed."); }
+        } catch (error) { toast.error("Load failed."); }
     };
 
     const handleImportGenerator = () => {
@@ -201,7 +203,10 @@ const AnalyzerTab: React.FC<AnalyzerTabProps> = ({ frequencies, setFrequencies, 
                     <button onClick={addFrequency} className="w-full mt-4 py-3 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] bg-slate-900 border border-dashed border-slate-700 text-slate-500 hover:border-indigo-500/50 hover:text-indigo-400 transition-all">+ Add Channel Entry</button>
 
                     <div className="mt-12 mb-6 flex flex-col">
-                        <CardTitle className="!mb-0 !border-b-0 !pb-0 text-white">Logic Parameters</CardTitle>
+                        <CardTitle className="!mb-0 !border-b-0 !pb-0 text-white flex items-center">
+                            Logic Parameters
+                            <InfoTooltip content="Set the minimum frequency separation required between different types of intermodulation products." />
+                        </CardTitle>
                         <span className="text-[9px] font-black uppercase text-slate-500 tracking-[0.2em] mt-1">Intermodulation Guard Guards</span>
                     </div>
                     
@@ -217,11 +222,17 @@ const AnalyzerTab: React.FC<AnalyzerTabProps> = ({ frequencies, setFrequencies, 
                     <div className="mt-4 p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10 space-y-3">
                         <label className="flex items-center gap-3 cursor-pointer group">
                             <input type="checkbox" checked={timelineAware} onChange={e => setTimelineAware(e.target.checked)} className="w-4 h-4 rounded accent-indigo-500 bg-slate-800" />
-                            <span className="text-slate-400 text-[10px] font-black uppercase tracking-widest group-hover:text-indigo-300 transition-colors">Timeline-Aware Validation</span>
+                            <span className="text-slate-400 text-[10px] font-black uppercase tracking-widest group-hover:text-indigo-300 transition-colors flex items-center">
+                                Timeline-Aware Validation
+                                <InfoTooltip content="Only check for conflicts between frequencies that are active in the same scene/time period." />
+                            </span>
                         </label>
                         <label className="flex items-center gap-3 cursor-pointer group">
                             <input type="checkbox" checked={advancedAnalysis} onChange={e => setAdvancedAnalysis(e.target.checked)} className="w-4 h-4 rounded accent-indigo-500 bg-slate-800" />
-                            <span className="text-slate-400 text-[10px] font-black uppercase tracking-widest group-hover:text-indigo-300 transition-colors">Higher-Order Product Audit</span>
+                            <span className="text-slate-400 text-[10px] font-black uppercase tracking-widest group-hover:text-indigo-300 transition-colors flex items-center">
+                                Higher-Order Product Audit
+                                <InfoTooltip content="Include 5-tone and 7-tone intermodulation products in the analysis (computationally intensive)." />
+                            </span>
                         </label>
                     </div>
 

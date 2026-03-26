@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 import { User, CreditCard, Shield, LogOut, X, Check, Clock, Calendar, Zap, ExternalLink } from 'lucide-react';
 import { db, auth } from '../src/lib/firebase';
 import { doc, setDoc } from 'firebase/firestore';
@@ -84,10 +85,10 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({ user, onClose, onLo
             console.log("Firestore save successful");
             
             setCurrentUser({ ...currentUser, ...profileData });
-            alert('Profile updated successfully!');
+            toast.success('Profile updated successfully!');
         } catch (error: any) {
             console.error("Error updating profile:", error);
-            alert(`Failed to update profile: ${error.message}`);
+            toast.error(`Failed to update profile: ${error.message}`);
         } finally {
             setIsUpdatingName(false);
         }
@@ -165,7 +166,7 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({ user, onClose, onLo
             setCloudProjects(prev => prev.filter(p => p.id !== id));
         } catch (err) {
             console.error("Failed to delete project:", err);
-            alert("Failed to delete project.");
+            toast.error("Failed to delete project.");
         }
     };
 
@@ -224,16 +225,16 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({ user, onClose, onLo
             console.error('Subscription error:', error);
             const errorMessage = error.message || 'Failed to start checkout process.';
             setLastError(errorMessage);
-            alert(`Stripe Connection Error:\n${errorMessage}\n\nPlease check the server logs for more details.`);
+            toast.error(`Stripe Connection Error: ${errorMessage}`);
             setIsLoading(false);
         }
     };
 
     const handleManageBilling = async () => {
         // In a real app, you'd fetch the stripeCustomerId from the user document
-        // For now, we'll show an alert if it's not available in the user object
+        // For now, we'll show a toast if it's not available in the user object
         if (!currentUser.stripeCustomerId) {
-            alert('No active billing profile found. Please subscribe to a plan first.');
+            toast.error('No active billing profile found. Please subscribe to a plan first.');
             return;
         }
 
@@ -261,7 +262,7 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({ user, onClose, onLo
             }
         } catch (error) {
             console.error('Portal error:', error);
-            alert('Failed to open billing portal.');
+            toast.error('Failed to open billing portal.');
             setIsLoading(false);
         }
     };
@@ -276,12 +277,12 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({ user, onClose, onLo
                     subscription: tierName,
                     lastUpdated: new Date().toISOString()
                 }, { merge: true });
-                alert(`SIMULATION: ${tierName} activated successfully!`);
+                toast.success(`SIMULATION: ${tierName} activated successfully!`);
                 window.location.reload();
             }
         } catch (err) {
             console.error("Simulation failed:", err);
-            alert("Simulation failed. Check console for details.");
+            toast.error("Simulation failed. Check console for details.");
         } finally {
             setIsLoading(false);
         }
@@ -294,10 +295,10 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({ user, onClose, onLo
             const { auth } = await import('../src/lib/firebase');
             const { sendPasswordResetEmail } = await import('firebase/auth');
             await sendPasswordResetEmail(auth, currentUser.email);
-            alert(`A password reset email has been sent to ${currentUser.email}. Please check your inbox.`);
+            toast.success(`A password reset email has been sent to ${currentUser.email}. Please check your inbox.`);
         } catch (error: any) {
             console.error("Password reset error:", error);
-            alert(`Failed to send password reset email: ${error.message}`);
+            toast.error(`Failed to send password reset email: ${error.message}`);
         } finally {
             setIsLoading(false);
         }

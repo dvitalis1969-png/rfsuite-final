@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { toast } from 'sonner';
 import Card, { CardTitle } from './Card';
 import { US_TV_CHANNELS, UK_TV_CHANNELS, US_DTV_DATABASE, UK_DTV_DATABASE, UK_GRID_REF_DATABASE } from '../constants';
 
@@ -77,7 +78,7 @@ const WhiteSpaceTab: React.FC = () => {
     
         const processLocation = (loc: string, type: 'postcode' | 'ngr') => {
             if (!loc) {
-                alert(`Please enter a ${region === 'us' ? 'Zip Code' : 'location'}.`);
+                toast.error(`Please enter a ${region === 'us' ? 'Zip Code' : 'location'}.`);
                 setIsLoading(false);
                 return;
             }
@@ -90,7 +91,7 @@ const WhiteSpaceTab: React.FC = () => {
                     setIsLoading(false);
                 }, 600);
             } catch (error: any) {
-                alert(`Error processing location data: ${error.message}`);
+                toast.error(`Error processing location data: ${error.message}`);
                 setIsLoading(false);
             }
         };
@@ -101,7 +102,7 @@ const WhiteSpaceTab: React.FC = () => {
         }
     
         if (!navigator.geolocation) {
-            alert('Geolocation is not supported by your browser. Please enter a location manually.');
+            toast.error('Geolocation is not supported by your browser. Please enter a location manually.');
             setIsLoading(false);
             return;
         }
@@ -139,13 +140,13 @@ const WhiteSpaceTab: React.FC = () => {
                         throw new Error('Could determine a Zip/Postcode from your location.');
                     }
                 } catch (error: any) {
-                    alert(`Geolocation Error: ${error.message}. Please enter manually.`);
+                    toast.error(`Geolocation Error: ${error.message}. Please enter manually.`);
                     setIsLoading(false);
                 }
             },
             (error) => { 
                 setIsLoading(false);
-                alert("Geolocation failed. Please enter manually.");
+                toast.error("Geolocation failed. Please enter manually.");
             }
         );
     };

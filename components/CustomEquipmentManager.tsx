@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 import { EquipmentProfile } from '../types';
 import * as dbService from '../services/dbService';
 
@@ -43,7 +44,7 @@ const CustomEquipmentManager: React.FC<CustomEquipmentManagerProps> = ({ customP
 
     const handleSave = async () => {
         if (!editingProfile.name || !editingProfile.band) {
-            alert("Profile Name and Band are required.");
+            toast.error("Profile Name and Band are required.");
             return;
         }
         const profileToSave: EquipmentProfile = {

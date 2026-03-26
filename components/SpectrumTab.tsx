@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
+import { toast } from 'sonner';
 import { addDoc, collection } from 'firebase/firestore';
 import { db, auth } from '../src/lib/firebase';
 import { Frequency, TabID, ScanDataPoint, Scene, FestivalAct, Plot, PlotState, DuplexPair, ZonalResult, TxType, ConstantSystemRequest, WMASState, EquipmentProfile, Thresholds } from '../types';
@@ -286,7 +287,7 @@ const SpectrumTab: React.FC<SpectrumTabProps> = ({ projectId, analyzerFrequencie
             const min = data[0].freq;
             const max = data[data.length - 1].freq;
             setRange({ min: Math.floor(min - 5), max: Math.ceil(max + 5) });
-        } catch (err: any) { alert(`Error parsing scan file: ${err.message}`); }
+        } catch (err: any) { toast.error(`Error parsing scan file: ${err.message}`); }
         if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
@@ -528,10 +529,10 @@ const SpectrumTab: React.FC<SpectrumTabProps> = ({ projectId, analyzerFrequencie
         };
         try {
             await addDoc(collection(db, 'plots'), plot);
-            alert('Plot shared successfully!');
+            toast.success('Plot shared successfully!');
         } catch (error) {
             console.error('Error sharing plot:', error);
-            alert('Failed to share plot.');
+            toast.error('Failed to share plot.');
         } finally {
             setIsSharing(false);
         }

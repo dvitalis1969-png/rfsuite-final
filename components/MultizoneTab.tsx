@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { toast } from 'sonner';
 import Card, { CardTitle } from './Card';
 import TvGrid from './TvGrid';
 import { Thresholds, Zone, ZoneConfig, Frequency, EquipmentProfile, CompatibilityLevel, TxType, TVChannelState, WMASState } from '../types';
@@ -400,7 +401,7 @@ const MultizoneTab: React.FC<MultizoneTabProps> = ({
             setDiagnostic(diag);
         } catch (error) {
             console.error(error);
-            alert("Calculation error.");
+            toast.error("Calculation error.");
         } finally {
             setIsLoading(false);
             setProgress(1);

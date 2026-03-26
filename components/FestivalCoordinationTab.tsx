@@ -10,6 +10,10 @@ import Card, { CardTitle } from './Card';
 import TvGrid from './TvGrid';
 import SpectrumVisualizer from './SpectrumVisualizer';
 import LiveScanAnalyzer from './LiveScanAnalyzer';
+import { useLocalStorage } from '../hooks/useLocalStorage';
+import { useDebounce } from '../hooks/useDebounce';
+import { toast } from 'sonner';
+import { InfoTooltip } from './InfoTooltip';
 
 // Helper to parse dates in multiple formats, specifically handling DD/MM/YYYY
 const parseFlexibleDate = (dateStr: string): Date => {
@@ -532,7 +536,7 @@ const ExcelToCsvConverter: React.FC<{
                 setWorkbookData(rows);
                 setColumnMapping({}); 
             } catch (err: any) {
-                alert("Upload failed: " + err.message);
+                toast.error("Upload failed: " + err.message);
             } finally {
                 setIsProcessing(false);
             }
@@ -787,10 +791,11 @@ const FestivalCoordinationTab: React.FC<FestivalCoordinationTabProps> = ({
     const [isGenerating, setIsGenerating] = useState(false);
     const [progress, setProgress] = useState({ found: 0, processed: 0, total: 0, totalRequested: 0, status: '' });
     const [overlapMinutes, setOverlapMinutes] = useState(30);
-    const [manualExclusions, setManualExclusions] = useState('');
+    const [manualExclusions, setManualExclusions] = useLocalStorage('festival_manualExclusions', '');
+    const debouncedExclusions = useDebounce(manualExclusions, 300);
     const [optimizationReport, setOptimizationReport] = useState<OptimizationReport | null>(null);
     const [isHudMinimized, setIsHudMinimized] = useState(false);
-    const [tvRegion, setTvRegion] = useState<'uk' | 'us'>('uk');
+    const [tvRegion, setTvRegion] = useLocalStorage<'uk' | 'us'>('festival_tvRegion', 'uk');
     const [tvStates, setTvStates] = useState<Record<number, TVChannelState>>(initialTvStates);
     const [showTabulation, setShowTabulation] = useState(false);
     const [diagnosticConflicts, setDiagnosticConflicts] = useState<Conflict[]>([]);
@@ -798,7 +803,7 @@ const FestivalCoordinationTab: React.FC<FestivalCoordinationTabProps> = ({
     const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
     const [numZonesInput, setNumZonesInput] = useState(numZones.toString());
     const [isConverterOpen, setIsConverterOpen] = useState(false);
-    const [exclusionThreshold, setExclusionThreshold] = useState(-85);
+    const [exclusionThreshold, setExclusionThreshold] = useLocalStorage('festival_exclusionThreshold', -85);
     
     // Global Distance State
     const [globalDistInput, setGlobalDistInput] = useState<string>("150");
@@ -811,13 +816,13 @@ const FestivalCoordinationTab: React.FC<FestivalCoordinationTabProps> = ({
     const [diagSelectedIds, setDiagSelectedIds] = useState<Set<string>>(new Set());
 
     const parsedExclusions = useMemo(() => {
-        return manualExclusions.split(',')
+        return debouncedExclusions.split(',')
             .map(s => {
                 const parts = s.split('-').map(p => parseFloat(p.trim()));
                 return parts.length === 2 ? { min: parts[0], max: parts[1] } : null;
             })
             .filter((x): x is { min: number, max: number } => x !== null);
-    }, [manualExclusions]);
+    }, [debouncedExclusions]);
 
     const handleExclusionZoneAdd = (min: number, max: number) => {
         const newRange = `${min.toFixed(3)}-${max.toFixed(3)}`;
@@ -1129,7 +1134,7 @@ const FestivalCoordinationTab: React.FC<FestivalCoordinationTabProps> = ({
     const handleAnalyzeDiagnostic = () => {
         const isFilterActive = diagSelectedIds.size > 0;
         if (!isFilterActive) {
-            alert("No focused Acts, House Systems or Constant Transmits selected for audit.");
+            toast.error("No focused Acts, House Systems or Constant Transmits selected for audit.");
             return;
         }
 
@@ -1138,7 +1143,7 @@ const FestivalCoordinationTab: React.FC<FestivalCoordinationTabProps> = ({
         const filteredHouse = houseSystems.filter(s => diagSelectedIds.has(`house-${s.stageName}`));
 
         const pool = [...filteredActs, ...filteredConstants, ...filteredHouse].flatMap(e => e.frequencies || []).filter(f => f.value > 0);
-        if (pool.length < 2) { alert("Insufficient focus data. Select >= 2 active channels to audit."); return; }
+        if (pool.length < 2) { toast.error("Insufficient focus data. Select >= 2 active channels to audit."); return; }
         
         const result = validateFestivalCompatibility(filteredActs, filteredConstants, filteredHouse, zoneConfigs, distances, fullEquipmentDatabase, compatibilityMatrix, overlapMinutes, equipmentOverrides, wmasState);
         setDiagnosticConflicts(result.conflicts); setHasAnalyzed(true);
@@ -1193,6 +1198,7 @@ const FestivalCoordinationTab: React.FC<FestivalCoordinationTabProps> = ({
         a.download = `${filename}.txt`;
         a.click();
         URL.revokeObjectURL(url);
+        toast.success("✅ WWB Export Downloaded");
     };
 
     const handleExportPlan = (format: 'pdf' | 'csv' | 'xlsx' | 'txt' | 'wwb') => {
@@ -1212,6 +1218,7 @@ const FestivalCoordinationTab: React.FC<FestivalCoordinationTabProps> = ({
             a.href = url;
             a.download = `${filename}_WWB_Coordination.csv`;
             a.click();
+            toast.success("✅ WWB Export Downloaded");
         } else if (format === 'csv' || format === 'xlsx') {
             let csv = "ID,Label,Frequency,Type,Allocation,Times,Equipment\n";
             processedTabulatedPlan.forEach(row => {
@@ -1220,6 +1227,7 @@ const FestivalCoordinationTab: React.FC<FestivalCoordinationTabProps> = ({
             const blob = new Blob([csv], { type: format === 'xlsx' ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 'text/csv' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a'); a.href = url; a.download = `${filename}.${format === 'xlsx' ? 'xls' : 'csv'}`; a.click();
+            toast.success(`✅ ${format.toUpperCase()} Export Downloaded`);
         } else if (format === 'txt') {
             let txt = "FESTIVAL RF COORDINATION LEDGER\n================================\n\n";
             processedTabulatedPlan.forEach(row => {
@@ -1228,6 +1236,7 @@ const FestivalCoordinationTab: React.FC<FestivalCoordinationTabProps> = ({
             const blob = new Blob([txt], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a'); a.href = url; a.download = `${filename}.txt`; a.click();
+            toast.success("✅ TXT Export Downloaded");
         } else if (format === 'pdf') {
             // @ts-ignore
             const { jsPDF } = window.jspdf;
@@ -1240,6 +1249,7 @@ const FestivalCoordinationTab: React.FC<FestivalCoordinationTabProps> = ({
             // @ts-ignore
             doc.autoTable({ startY: 35, head: [['Freq', 'Label', 'Type', 'Allocation', 'Times', 'Equipment']], body: tableData, theme: 'grid', headStyles: { fillStyle: [30, 41, 59] }, alternateRowStyles: { fillStyle: [241, 245, 249] } });
             doc.save(`${filename}.pdf`);
+            toast.success("✅ PDF Export Downloaded");
         }
     };
 
@@ -1391,11 +1401,17 @@ const FestivalCoordinationTab: React.FC<FestivalCoordinationTabProps> = ({
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="text-[10px] text-slate-500 uppercase font-black mb-1 block">Time Overlap Buffer (min)</label>
+                                <label className="text-[10px] text-slate-500 uppercase font-black mb-1 flex items-center">
+                                    Time Overlap Buffer (min)
+                                    <InfoTooltip content="The minimum time gap required between acts using the same frequency. Helps prevent interference during changeovers." />
+                                </label>
                                 <input type="number" value={overlapMinutes} onChange={e => setOverlapMinutes(parseInt(e.target.value) || 0)} className="w-full bg-slate-950 border border-slate-700 p-2 rounded text-sm text-cyan-400 font-bold" />
                             </div>
                             <div>
-                                <label className="text-[10px] text-slate-500 uppercase font-black mb-1 block">Manual Exclusions (MHz)</label>
+                                <label className="text-[10px] text-slate-500 uppercase font-black mb-1 flex items-center">
+                                    Manual Exclusions (MHz)
+                                    <InfoTooltip content="Specify frequency ranges to avoid during coordination. Format: start-end, start-end (e.g., 500-505, 606.5-608)." />
+                                </label>
                                 <input value={manualExclusions} onChange={e => setManualExclusions(e.target.value)} placeholder="e.g. 500-505, 606.5-608" className="w-full bg-slate-950 border border-slate-700 p-2 rounded text-xs font-mono text-slate-300" />
                                 
                                 {parsedExclusions.length > 0 && (
@@ -1531,7 +1547,10 @@ const FestivalCoordinationTab: React.FC<FestivalCoordinationTabProps> = ({
                 <Card className="!hover:translate-y-0 flex-grow">
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
                         <div>
-                            <CardTitle className="!mb-0 text-base">📺 Quad-State TV Grid</CardTitle>
+                            <CardTitle className="!mb-0 text-base flex items-center">
+                                📺 Quad-State TV Grid
+                                <InfoTooltip content="Manage TV channel exclusions. Click a channel to cycle through states: Available (Green), Blocked (Red), Intermod Only (Yellow), and Reserved (Blue)." />
+                            </CardTitle>
                             <p className="text-[10px] text-slate-500 uppercase font-bold tracking-tighter mt-1">Define protected whitespace. Click to cycle states.</p>
                         </div>
                     </div>
@@ -1549,6 +1568,17 @@ const FestivalCoordinationTab: React.FC<FestivalCoordinationTabProps> = ({
                 <Card className="bg-indigo-600/10 border-indigo-500/30 !p-4">
                     <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-3">Engine Controls</h4>
                     <div className="space-y-3">
+                        <button 
+                            onClick={() => handleGenerate()} 
+                            disabled={isGenerating} 
+                            className="w-full py-2.5 rounded-xl font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 bg-yellow-500 text-slate-900 border-b-4 border-yellow-700 active:translate-y-0.5 hover:bg-yellow-400 shadow-lg shadow-yellow-500/10 ring-1 ring-yellow-400/30 text-[10px]"
+                        >
+                            {isGenerating ? (
+                                <><span className="w-3 h-3 border-2 border-slate-900/20 border-t-slate-900 rounded-full animate-spin"></span>COORDINATING...</>
+                            ) : (
+                                <><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg> GENERATE PLAN</>
+                            )}
+                        </button>
                         <button 
                             onClick={() => setShowTabulation(!showTabulation)}
                             className={`w-full py-2.5 rounded-xl font-black uppercase tracking-widest transition-all ${secondaryButton} text-[10px]`}
