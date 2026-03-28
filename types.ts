@@ -65,7 +65,7 @@ export interface EquipmentProfile {
 }
 
 export type TabID = 'analyzer' | 'generator' | 'whitespace' | 'spectrum' | 'waterfall' | 'multiband' | 'talkback' | 'zonalTalkback' | 'multizone' | 'multistage' | 'siteMap' | 'festivalSiteMap' | 'multizoneSiteMap' | 'timeline' | 'festival' 
-  | 'linkBudget' | 'audioTone' | 'fspl' | 'powerConverter' | 'fresnelZone' | 'antennaDownTilt' | 'cableLoss' | 'imdDemo' | 'proximitySimulator' | 'diversityPlacement' | 'interference' | 'equipmentDatabase' | 'hardwareLink' | 'userGuide' | 'tourPlanning' | 'wmas' | 'plotGallery' | 'activityFeed' | 'frequencyForensics';
+  | 'linkBudget' | 'audioTone' | 'fspl' | 'powerConverter' | 'fresnelZone' | 'antennaDownTilt' | 'cableLoss' | 'imdDemo' | 'proximitySimulator' | 'diversityPlacement' | 'interference' | 'equipmentDatabase' | 'hardwareLink' | 'userGuide' | 'tourPlanning' | 'wmas' | 'plotGallery' | 'activityFeed' | 'frequencyForensics' | 'reporting';
 
 // FIX: Added 'multizone' to AppCategory to resolve assignment errors in Header and Tabs
 export type AppCategory = 'calculator' | 'coordination' | 'analysis' | 'comms' | 'toolkit' | 'hardware' | 'multizone' | 'tour' | 'wmas' | 'network';

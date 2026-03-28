@@ -11,6 +11,7 @@ import WaterfallTab from './components/WaterfallTab';
 import MultiBandTab from './components/MultiBandTab';
 import TalkbackTab from './components/TalkbackTab';
 import ZonalTalkbackTab from './components/ZonalTalkbackTab';
+import ReportingTab from './components/ReportingTab';
 import PlotGallery from './components/PlotGallery';
 import MultizoneTab from './components/MultizoneTab';
 import SiteMapTab from './components/SiteMapTab';
@@ -830,6 +831,7 @@ const App: React.FC = () => {
                                     
                                     {/* Analysis & Visualization */}
                                     {activeTab === 'spectrum' && <SpectrumTab projectId={currentProject?.id} analyzerFrequencies={frequencies} generatorFrequencies={generatorFrequencies} scanData={scanData} setScanData={setScanData} setInclusionRanges={setInclusionRanges} setActiveTab={setActiveTab} scenes={scenes} festivalActs={festivalActs} constantSystems={festivalConstantSystems} houseSystems={festivalHouseSystems} talkbackPairs={tbResults} talkbackManual={tbManualPairs} zonalResults={zonalResults} wmasState={wmasState} previewEquipment={previewEquipment} setPreviewEquipment={setPreviewEquipment} />}
+                                    {activeTab === 'reporting' && <ReportingTab state={getCurrentAppState()} projectName={currentProject?.name} />}
                                     {activeTab === 'waterfall' && <WaterfallTab analyzerFrequencies={frequencies} generatorFrequencies={generatorFrequencies} scanData={scanData} wmasState={wmasState} />}
                                     
                                     {/* Comms Planning */}
