@@ -807,7 +807,7 @@ const App: React.FC = () => {
                 <main className={`flex-grow transition-all duration-500 ${isCommunityOpen ? 'lg:flex-1' : 'w-full'}`}>
                     <ErrorBoundary>
                         {activeApp === null ? (
-                            <AppLauncher onSelectApp={cat => { 
+                            <AppLauncher user={user} onSelectApp={cat => { 
                                 if (cat === 'network') {
                                     setIsCommunityOpen(true);
                                 } else {

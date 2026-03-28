@@ -1,8 +1,11 @@
 import React from 'react';
-import { AppCategory } from '../types';
+import { AppCategory, User } from '../types';
+import { isPro } from '../src/lib/userUtils';
+import { Lock } from 'lucide-react';
 
 interface AppLauncherProps {
     onSelectApp: (app: AppCategory) => void;
+    user: User | null;
 }
 
 const AppCard: React.FC<{ 
@@ -12,27 +15,38 @@ const AppCard: React.FC<{
     onClick: () => void;
     colorClass: string;
     borderClass: string;
-}> = ({ title, description, icon, onClick, colorClass, borderClass }) => (
+    isLocked?: boolean;
+}> = ({ title, description, icon, onClick, colorClass, borderClass, isLocked }) => (
     <button 
-        onClick={onClick}
-        className={`group relative overflow-hidden p-8 rounded-3xl border border-white/10 bg-slate-900/40 hover:bg-slate-900 transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_40px_100px_rgba(0,0,0,0.6)] text-left w-full h-full flex flex-col`}
+        onClick={isLocked ? undefined : onClick}
+        className={`group relative overflow-hidden p-8 rounded-3xl border border-white/10 bg-slate-900/40 ${isLocked ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-900 hover:-translate-y-2 hover:shadow-[0_40px_100px_rgba(0,0,0,0.6)]'} transition-all duration-500 text-left w-full h-full flex flex-col`}
     >
-        <div className={`absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 rounded-full blur-[80px] opacity-20 group-hover:opacity-40 transition-opacity duration-700 ${colorClass}`}></div>
+        <div className={`absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 rounded-full blur-[80px] opacity-20 ${!isLocked && 'group-hover:opacity-40'} transition-opacity duration-700 ${colorClass}`}></div>
         
-        <div className={`p-4 w-fit rounded-2xl mb-6 bg-slate-950 border ${borderClass} group-hover:scale-110 transition-transform duration-500 ${colorClass.replace('bg-', 'text-')}`}>
-            {icon}
+        <div className="flex justify-between items-start mb-6">
+            <div className={`p-4 w-fit rounded-2xl bg-slate-950 border ${borderClass} ${!isLocked && 'group-hover:scale-110'} transition-transform duration-500 ${colorClass.replace('bg-', 'text-')}`}>
+                {icon}
+            </div>
+            {isLocked && (
+                <div className="p-2 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20 flex items-center gap-2">
+                    <Lock size={14} />
+                    <span className="text-[9px] font-black uppercase tracking-widest">Pro Only</span>
+                </div>
+            )}
         </div>
         
-        <h3 className="text-xl font-black text-white mb-3 uppercase tracking-wider group-hover:text-indigo-400 transition-colors">{title}</h3>
-        <p className="text-sm text-slate-500 font-medium leading-relaxed group-hover:text-slate-300 transition-colors">{description}</p>
+        <h3 className={`text-xl font-black text-white mb-3 uppercase tracking-wider ${!isLocked && 'group-hover:text-indigo-400'} transition-colors`}>{title}</h3>
+        <p className={`text-sm text-slate-500 font-medium leading-relaxed ${!isLocked && 'group-hover:text-slate-300'} transition-colors`}>{description}</p>
         
-        <div className="mt-auto pt-8 flex items-center text-[10px] font-black uppercase tracking-[0.2em] text-slate-600 group-hover:text-indigo-400 transition-colors">
-            Initialize Module <span className="ml-2 text-lg leading-none transform group-hover:translate-x-2 transition-transform">&rarr;</span>
+        <div className={`mt-auto pt-8 flex items-center text-[10px] font-black uppercase tracking-[0.2em] text-slate-600 ${!isLocked && 'group-hover:text-indigo-400'} transition-colors`}>
+            {isLocked ? 'Upgrade to Access' : <>Initialize Module <span className="ml-2 text-lg leading-none transform group-hover:translate-x-2 transition-transform">&rarr;</span></>}
         </div>
     </button>
 );
 
-const AppLauncher: React.FC<AppLauncherProps> = ({ onSelectApp }) => {
+const AppLauncher: React.FC<AppLauncherProps> = ({ onSelectApp, user }) => {
+    const pro = isPro(user);
+    
     return (
         <div className="flex flex-col items-center justify-center min-h-[85vh] p-4">
             <div className="text-center mb-12 animate-in fade-in slide-in-from-top-4 duration-1000">
@@ -54,6 +68,7 @@ const AppLauncher: React.FC<AppLauncherProps> = ({ onSelectApp }) => {
                     colorClass="bg-indigo-500"
                     borderClass="border-indigo-500/20"
                     onClick={() => onSelectApp('calculator')}
+                    isLocked={!pro}
                     icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>}
                 />
                 <AppCard 
@@ -62,6 +77,7 @@ const AppLauncher: React.FC<AppLauncherProps> = ({ onSelectApp }) => {
                     colorClass="bg-fuchsia-500"
                     borderClass="border-fuchsia-500/20"
                     onClick={() => onSelectApp('coordination')}
+                    isLocked={!pro}
                     icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>}
                 />
                 <AppCard 
@@ -70,6 +86,7 @@ const AppLauncher: React.FC<AppLauncherProps> = ({ onSelectApp }) => {
                     colorClass="bg-cyan-500"
                     borderClass="border-cyan-500/20"
                     onClick={() => onSelectApp('analysis')}
+                    isLocked={!pro}
                     icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" /></svg>}
                 />
                 <AppCard 
@@ -78,6 +95,7 @@ const AppLauncher: React.FC<AppLauncherProps> = ({ onSelectApp }) => {
                     colorClass="bg-purple-500"
                     borderClass="border-purple-500/20"
                     onClick={() => onSelectApp('multizone')}
+                    isLocked={!pro}
                     icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>}
                 />
                 <AppCard 
@@ -86,6 +104,7 @@ const AppLauncher: React.FC<AppLauncherProps> = ({ onSelectApp }) => {
                     colorClass="bg-emerald-500"
                     borderClass="border-emerald-500/20"
                     onClick={() => onSelectApp('comms')}
+                    isLocked={!pro}
                     icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" /></svg>}
                 />
                 <AppCard 
@@ -94,6 +113,7 @@ const AppLauncher: React.FC<AppLauncherProps> = ({ onSelectApp }) => {
                     colorClass="bg-amber-500"
                     borderClass="border-amber-500/20"
                     onClick={() => onSelectApp('hardware')}
+                    isLocked={!pro}
                     icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2M7 11V7a2 2 0 012-2h6a2 2 0 012 2v4M9 19v-1h6v1" /></svg>}
                 />
                 <AppCard 
@@ -102,6 +122,7 @@ const AppLauncher: React.FC<AppLauncherProps> = ({ onSelectApp }) => {
                     colorClass="bg-blue-500"
                     borderClass="border-blue-500/20"
                     onClick={() => onSelectApp('tour')}
+                    isLocked={!pro}
                     icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-2 1 2-1zm3.968-3.047a10.031 10.031 0 01-4.477 2.548 4.885 4.885 0 00-1.513.658l-2.096 1.048a.51.51 0 01-.689-.23.51.51 0 01.23-.69l2.103-1.052a5.086 5.086 0 011.578-.68 9.037 9.037 0 004.42-2.513 4.666 4.666 0 00.614-2.75 4.35 4.35 0 00-.773-2.545 5.59 5.05 0 01-.512-1.88A3.993 3.993 0 0112 3a3.993 3.993 0 013.726 2.348c.19.456.365.923.512 1.88.316.817.58 1.673.773 2.545.193.87.205 1.794-.614 2.75a9.037 9.037 0 00-4.42 2.513 5.086 5.086 0 01-1.578.68l-2.103 1.052a.51.51 0 01-.69-.23.51.51 0 01.23-.689l2.096-1.048a4.885 4.885 0 001.513-.658 10.031 10.031 0 014.477-2.548" /></svg>}
                 />
                 <AppCard 
@@ -110,6 +131,7 @@ const AppLauncher: React.FC<AppLauncherProps> = ({ onSelectApp }) => {
                     colorClass="bg-rose-500"
                     borderClass="border-rose-500/20"
                     onClick={() => onSelectApp('wmas')}
+                    isLocked={!pro}
                     icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>}
                 />
                 <AppCard 

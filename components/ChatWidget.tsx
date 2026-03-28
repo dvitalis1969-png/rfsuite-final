@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { db, auth, storage } from '../src/lib/firebase';
 import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, setDoc, deleteDoc, where } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
+import { isPro } from '../src/lib/userUtils';
 import { getUserColor, formatTimestamp } from '../src/utils/chatUtils';
 import { handleFirestoreError, OperationType } from '../src/utils/firestoreErrorHandler';
 import { ImagePlus, Loader2, SmilePlus, Mic, Square, Edit2, Trash2, Check, X, Search, ArrowDown, User } from 'lucide-react';
@@ -275,7 +276,7 @@ const ChatWidget: React.FC<{ projectId?: string | number; unreadDMs?: Record<str
               await addDoc(collection(db, 'messages', activeProjectId, 'chat'), {
                 userId: auth.currentUser!.uid,
                 userName: auth.currentUser!.displayName || 'Anonymous',
-                isPro: user?.subscriptionStatus === 'active',
+                isPro: isPro(user),
                 text: '',
                 audioUrl: base64Audio,
                 timestamp: serverTimestamp(),
@@ -479,6 +480,11 @@ const ChatWidget: React.FC<{ projectId?: string | number; unreadDMs?: Record<str
     const file = e.target.files?.[0];
     if (!file || !auth.currentUser) return;
     
+    if (!isPro(user)) {
+      setUploadError('Image uploads are only available for Pro users.');
+      return;
+    }
+    
     if (!file.type.startsWith('image/')) {
       setUploadError('Please select a valid image file.');
       return;
@@ -498,7 +504,7 @@ const ChatWidget: React.FC<{ projectId?: string | number; unreadDMs?: Record<str
       await addDoc(collection(db, 'messages', activeProjectId, 'chat'), {
         userId: auth.currentUser.uid,
         userName: auth.currentUser.displayName || 'Anonymous',
-        isPro: user?.subscriptionStatus === 'active',
+        isPro: isPro(user),
         text: '',
         imageUrl: compressedDataUrl, // Save the Base64 string directly
         timestamp: serverTimestamp(),

@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import { motion } from 'motion/react';
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, setDoc, updateDoc, arrayUnion, arrayRemove, getDocs, where, deleteDoc } from 'firebase/firestore';
 import { db, auth } from '../src/lib/firebase';
+import { isPro } from '../src/lib/userUtils';
 import { User } from '../types';
 import { handleFirestoreError, OperationType } from '../src/utils/firestoreErrorHandler';
 import { Pencil, Trash2, Check, X, Loader2, ArrowLeft, UserCircle, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
@@ -176,12 +177,13 @@ export const ActivityFeed: React.FC<{ user: User | null; theme?: 'light' | 'dark
 
     const handlePost = async () => {
         if ((!newPostContent.trim() && !attachedImage && !selectedPlot) || !user) return;
+        
         setIsPosting(true);
         try {
             const postData: any = {
                 authorId: user.id,
                 authorName: user.name,
-                isPro: user.subscriptionStatus === 'active',
+                isPro: isPro(user),
                 content: newPostContent,
                 createdAt: serverTimestamp(),
                 likes: [],
@@ -235,13 +237,14 @@ export const ActivityFeed: React.FC<{ user: User | null; theme?: 'light' | 'dark
 
     const handleComment = async (postId: string) => {
         if (!user || !commentContent[postId]?.trim()) return;
+        
         try {
             const postRef = doc(db, 'feed_posts', postId);
             const newComment = {
                 id: Date.now().toString(),
                 authorId: user.id,
                 authorName: user.name,
-                isPro: user.subscriptionStatus === 'active',
+                isPro: isPro(user),
                 content: commentContent[postId],
                 createdAt: new Date()
             };

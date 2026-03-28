@@ -43,6 +43,20 @@ const ContactForm: React.FC = () => {
 
         setIsSubmitting(true);
         try {
+            // 1. Send email
+            const emailResponse = await fetch('/api/send-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    subject,
+                    message,
+                    userEmail: auth.currentUser.email
+                })
+            });
+            
+            if (!emailResponse.ok) throw new Error('Failed to send email');
+
+            // 2. Write to Firestore
             await addDoc(collection(db, 'contact_messages'), {
                 userId: auth.currentUser.uid,
                 userEmail: auth.currentUser.email,
@@ -51,12 +65,12 @@ const ContactForm: React.FC = () => {
                 createdAt: serverTimestamp(),
                 status: 'new'
             });
+            
             toast.success('Message sent successfully!');
             setSubject('');
             setMessage('');
         } catch (error: any) {
             console.error('Error sending message:', error);
-            handleFirestoreError(error, OperationType.CREATE, 'contact_messages');
             toast.error('Failed to send message.');
         } finally {
             setIsSubmitting(false);

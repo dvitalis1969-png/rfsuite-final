@@ -10,6 +10,7 @@ import { initializeApp, cert } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { getLinkPreview } from "link-preview-js";
 import { UK_TV_CHANNELS, US_TV_CHANNELS } from "./constants.js";
+import nodemailer from 'nodemailer';
 
 const calculateReceivedPowerDbm = (erpKw: number, distanceKm: number, frequencyMhz: number): number => {
   if (distanceKm <= 0.001) return 10 * Math.log10(erpKw * 1000);
@@ -261,6 +262,57 @@ async function startServer() {
   // API routes FIRST
   app.get("/api", (req, res) => {
     res.json({ message: "RF Suite API is running", version: "v2.5.1-STABLE-MARCH-17-13:12" });
+  });
+
+  app.post("/api/send-email", async (req, res) => {
+    try {
+      const { subject, message, userEmail } = req.body;
+      
+      let emailUser = process.env.EMAIL_USER;
+      let emailPass = process.env.EMAIL_PASS;
+      let emailConfig: any = {};
+
+      // Fallback to local file if env vars are missing
+      if (!emailUser || !emailPass) {
+        const emailPath = path.join(process.cwd(), 'email-config.json');
+        if (fs.existsSync(emailPath)) {
+          try {
+            emailConfig = JSON.parse(fs.readFileSync(emailPath, 'utf8'));
+            emailUser = emailConfig.emailUser;
+            emailPass = emailConfig.emailPass;
+            console.log("✅ Email credentials loaded from local email-config.json");
+          } catch (e) {
+            console.error("Error loading local email-config.json:", e);
+          }
+        }
+      }
+
+      if (!emailUser || !emailPass) {
+        throw new Error("Email credentials (EMAIL_USER/EMAIL_PASS) not found in environment or local file.");
+      }
+
+      const transporter = nodemailer.createTransport({
+        host: emailConfig.host || 'smtp.gmail.com',
+        port: emailConfig.port || 465,
+        secure: emailConfig.secure !== false,
+        auth: {
+          user: emailUser,
+          pass: emailPass,
+        },
+      });
+
+      await transporter.sendMail({
+        from: emailUser,
+        to: process.env.SUPPORT_EMAIL || emailUser,
+        subject: `New Contact Support Message: ${subject}`,
+        text: `From: ${userEmail}\n\nMessage:\n${message}`,
+      });
+
+      res.json({ success: true });
+    } catch (err) {
+      console.error("Email error:", err);
+      res.status(500).json({ error: "Failed to send email" });
+    }
   });
 
   app.get("/api/link-preview", async (req, res) => {

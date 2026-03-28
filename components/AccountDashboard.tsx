@@ -273,8 +273,9 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({ user, onClose, onLo
         setIsLoading(true);
         try {
             if (db) {
+                const status = tierName === 'none' ? 'none' : 'active';
                 await setDoc(doc(db, 'users', currentUser.id), {
-                    subscriptionStatus: 'active',
+                    subscriptionStatus: status,
                     subscription: tierName,
                     lastUpdated: new Date().toISOString()
                 }, { merge: true });
@@ -489,6 +490,12 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({ user, onClose, onLo
                                                 className="px-4 py-2 bg-indigo-600/20 hover:bg-indigo-600/40 border border-indigo-600/30 rounded-xl text-[9px] font-black text-white uppercase tracking-widest transition-all"
                                             >
                                                 Simulate Pro Month
+                                            </button>
+                                            <button 
+                                                onClick={() => simulateSubscription('none')}
+                                                className="px-4 py-2 bg-red-600/20 hover:bg-red-600/40 border border-red-600/30 rounded-xl text-[9px] font-black text-white uppercase tracking-widest transition-all"
+                                            >
+                                                Simulate Free Tier
                                             </button>
                                         </div>
                                         <p className="mt-3 text-[9px] text-slate-500 font-medium italic">
