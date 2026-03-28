@@ -681,14 +681,15 @@ const LiveScanAnalyzer: React.FC<LiveScanAnalyzerProps> = ({
             </div>
 
             <div className="mt-4 flex flex-col gap-4">
-                <div className="bg-slate-900 p-3 rounded-xl border border-indigo-500/30 shadow-lg flex flex-col md:flex-row items-center justify-between gap-4">
-                    <div className="flex items-center gap-4 w-full md:w-auto">
+                <div className="bg-slate-900 p-3 rounded-xl border border-indigo-500/30 shadow-lg flex flex-col gap-4">
+                    {/* Top Row: Status, Version, Speed, Auto-detect, TinySA */}
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                         <div className="flex items-center gap-3 min-w-[200px]">
                             <div className="w-3 h-6 bg-indigo-500 rounded-full animate-pulse" />
                             <h4 className="text-[14px] font-black text-white uppercase tracking-widest">Hardware Connection</h4>
                         </div>
                         
-                        <div className="flex-1 flex items-center justify-end gap-3">
+                        <div className="flex flex-wrap items-center justify-end gap-3">
                             <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${device ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-slate-800 text-slate-500'}`}>
                                 {device ? '● Online' : '○ Offline'}
                             </div>
@@ -700,8 +701,8 @@ const LiveScanAnalyzer: React.FC<LiveScanAnalyzerProps> = ({
                                 </div>
                             )}
 
-                            {!device ? (
-                                <div className="flex items-center gap-2">
+                            {!device && (
+                                <div className="flex flex-wrap items-center gap-2">
                                     <div className="flex items-center gap-2 bg-black/60 px-3 py-1.5 rounded-lg border border-indigo-500/30">
                                         <span className="text-[10px] font-black text-indigo-400 uppercase tracking-tighter">Speed:</span>
                                         <select 
@@ -777,16 +778,16 @@ const LiveScanAnalyzer: React.FC<LiveScanAnalyzerProps> = ({
                                     >
                                         <option value="tinysa">TinySA</option>
                                     </select>
-                                    <button 
-                                        onClick={handleConnect}
-                                        disabled={isConnecting}
-                                        className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 shadow-lg shadow-indigo-600/40 rounded-lg text-[10px] font-black text-white uppercase tracking-widest transition-all disabled:opacity-50 whitespace-nowrap"
-                                    >
-                                        {isConnecting ? 'Connecting...' : 'Connect'}
-                                    </button>
                                 </div>
-                            ) : (
-                                <div className="flex items-center gap-2">
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Bottom Row: Action Buttons */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-white/5">
+                        <div className="flex flex-wrap items-center gap-2">
+                            {device ? (
+                                <>
                                     <button 
                                         onClick={() => setIsPaused(!isPaused)}
                                         className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all shadow-lg whitespace-nowrap ${isPaused ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/20' : 'bg-amber-600/20 hover:bg-amber-600 text-amber-400 hover:text-white border border-amber-500/30'}`}
@@ -795,36 +796,52 @@ const LiveScanAnalyzer: React.FC<LiveScanAnalyzerProps> = ({
                                     </button>
                                     <button 
                                         onClick={handleDisconnect}
-                                        className="px-4 py-1.5 bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/30 rounded-lg text-[10px] font-black uppercase transition-all whitespace-nowrap"
+                                        className="px-4 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-[10px] font-black uppercase transition-all shadow-lg shadow-rose-600/20 whitespace-nowrap"
                                     >
                                         Disconnect
                                     </button>
-                                </div>
+                                </>
+                            ) : (
+                                <button 
+                                    onClick={handleConnect}
+                                    disabled={isConnecting}
+                                    className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-[12px] font-black uppercase tracking-widest transition-all shadow-lg shadow-indigo-600/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap"
+                                >
+                                    {isConnecting ? (
+                                        <>
+                                            <span className="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                                            Connecting...
+                                        </>
+                                    ) : (
+                                        <>🔌 Connect Device</>
+                                    )}
+                                </button>
                             )}
+                        </div>
 
-                            <div className="h-6 w-px bg-white/10 mx-1" />
-
-                            <button
+                        <div className="flex flex-wrap items-center gap-2">
+                            <button 
                                 onClick={() => setShowTerminal(!showTerminal)}
-                                className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tighter transition-all whitespace-nowrap ${showTerminal ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'}`}
+                                className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all whitespace-nowrap ${showTerminal ? 'bg-indigo-500 text-white shadow-lg' : 'bg-slate-800 text-slate-400 hover:text-white border border-slate-700'}`}
                             >
                                 {showTerminal ? 'Hide Terminal' : 'Terminal'}
                             </button>
-                            <button
+
+                            <button 
                                 onClick={() => setShowSetup(!showSetup)}
-                                className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tighter transition-all whitespace-nowrap ${showSetup ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'}`}
+                                className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all whitespace-nowrap ${showSetup ? 'bg-indigo-500 text-white shadow-lg' : 'bg-slate-800 text-slate-400 hover:text-white border border-slate-700'}`}
                             >
                                 {showSetup ? 'Hide Setup' : 'Setup Guide'}
                             </button>
-                            
-                            {!device && (
-                                <button 
-                                    onClick={onSimulate}
-                                    className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-white/5 rounded-lg text-[9px] font-black text-slate-400 hover:text-white uppercase tracking-widest transition-all whitespace-nowrap"
-                                >
-                                    {scanData ? 'Stop Demo' : 'Demo'}
-                                </button>
-                            )}
+
+                            <div className="h-4 w-px bg-white/10 mx-1 hidden sm:block" />
+
+                            <button 
+                                onClick={onSimulate}
+                                className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all whitespace-nowrap ${scanData && !device ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/20' : 'bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600 hover:text-white border border-indigo-500/30'}`}
+                            >
+                                {scanData && !device ? 'Stop Demo' : 'Demo Scan'}
+                            </button>
                         </div>
                     </div>
                 </div>

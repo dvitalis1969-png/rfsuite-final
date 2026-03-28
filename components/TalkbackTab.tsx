@@ -4,6 +4,7 @@ import Card, { CardTitle, Placeholder } from './Card';
 import { DuplexPair, TalkbackIntermods, IntermodProduct, TalkbackSolution, Conflict, Frequency, Thresholds, TxType, TalkbackMode } from '../types';
 import { calculateTalkbackIntermods, checkTalkbackCompatibility, toHz } from '../services/rfService';
 import { DISCRETE_TALKBACK_PAIRS, TALKBACK_DEFINITIONS, TALKBACK_FIXED_PAIRS, TALKBACK_FORBIDDEN_RANGES_BY_COUNTRY } from '../constants';
+import { EngagingLoadingState, CelebratorySuccessState } from './EngagingStates';
 
 interface DuplexPairWithBw extends DuplexPair {
     txBw?: number;
@@ -96,6 +97,7 @@ const TalkbackTab: React.FC<TalkbackTabProps> = ({ manualPairs, setManualPairs, 
     const [isCalculating, setIsCalculating] = useState(false);
     const [genProgress, setGenProgress] = useState(0);
     const [showTable, setShowTable] = useState(false);
+    const [showSuccess, setShowSuccess] = useState(false);
     const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
     const [sortField, setSortField] = useState<string>('tx');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -500,6 +502,7 @@ const TalkbackTab: React.FC<TalkbackTabProps> = ({ manualPairs, setManualPairs, 
         setResults([...lockedResults, ...bestSolution]);
         setGenProgress(1);
         setIsCalculating(false);
+        setShowSuccess(true);
         abortControllerRef.current = null;
     };
 
@@ -839,6 +842,19 @@ const TalkbackTab: React.FC<TalkbackTabProps> = ({ manualPairs, setManualPairs, 
 
     return (
         <div className="space-y-4 mx-auto">
+            <EngagingLoadingState 
+                isOpen={isCalculating} 
+                progress={genProgress * 100} 
+            />
+            <CelebratorySuccessState 
+                isOpen={showSuccess} 
+                onClose={() => setShowSuccess(false)} 
+                frequenciesFound={results?.length || 0}
+                frequenciesRequired={pairCount + simplexTxCount + simplexWalkieCount}
+                stats={[
+                    { label: 'Talkback Pairs Coordinated', value: results?.length || 0 }
+                ]}
+            />
             <Card>
                 <div className="flex justify-between items-center mb-6">
                     <div className="flex items-center gap-4">

@@ -14,6 +14,7 @@ import { useLocalStorage } from '../hooks/useLocalStorage';
 import { useDebounce } from '../hooks/useDebounce';
 import { toast } from 'sonner';
 import { InfoTooltip } from './InfoTooltip';
+import { EngagingLoadingState, CelebratorySuccessState } from './EngagingStates';
 
 // Helper to parse dates in multiple formats, specifically handling DD/MM/YYYY
 const parseFlexibleDate = (dateStr: string): Date => {
@@ -790,6 +791,11 @@ const FestivalCoordinationTab: React.FC<FestivalCoordinationTabProps> = ({
     const [activeSubTab, setActiveSubTab] = useState<'acts' | 'constant' | 'house'>('acts');
     const [isGenerating, setIsGenerating] = useState(false);
     const [progress, setProgress] = useState({ found: 0, processed: 0, total: 0, totalRequested: 0, status: '' });
+    const reqTotal = useMemo(() => {
+        let total = 0;
+        [...constantSystems, ...houseSystems, ...festivalActs].forEach(s => [...(s.micRequests || []), ...(s.iemRequests || [])].forEach(r => total += r.count));
+        return total;
+    }, [constantSystems, houseSystems, festivalActs]);
     const [overlapMinutes, setOverlapMinutes] = useState(30);
     const [manualExclusions, setManualExclusions] = useLocalStorage('festival_manualExclusions', '');
     const debouncedExclusions = useDebounce(manualExclusions, 300);
@@ -798,6 +804,7 @@ const FestivalCoordinationTab: React.FC<FestivalCoordinationTabProps> = ({
     const [tvRegion, setTvRegion] = useLocalStorage<'uk' | 'us'>('festival_tvRegion', 'uk');
     const [tvStates, setTvStates] = useState<Record<number, TVChannelState>>(initialTvStates);
     const [showTabulation, setShowTabulation] = useState(false);
+    const [showSuccess, setShowSuccess] = useState(false);
     const [diagnosticConflicts, setDiagnosticConflicts] = useState<Conflict[]>([]);
     const [hasAnalyzed, setHasAnalyzed] = useState(false);
     const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
@@ -858,6 +865,7 @@ const FestivalCoordinationTab: React.FC<FestivalCoordinationTabProps> = ({
         if (!scanData) return;
         const channelMap = tvRegion === 'uk' ? UK_TV_CHANNELS : US_TV_CHANNELS;
         
+        let newStates: Record<number, TVChannelState> | null = null;
         setTvStates(prevTvStates => {
             const nextStates = { ...prevTvStates };
             let changed = false;
@@ -876,9 +884,17 @@ const FestivalCoordinationTab: React.FC<FestivalCoordinationTabProps> = ({
                 }
             });
 
-            return changed ? nextStates : prevTvStates;
+            if (changed) {
+                newStates = nextStates;
+                return nextStates;
+            }
+            return prevTvStates;
         });
-    }, [scanData, exclusionThreshold, tvRegion]);
+
+        if (newStates && setTvChannelStates) {
+            setTimeout(() => setTvChannelStates(newStates!), 0);
+        }
+    }, [scanData, exclusionThreshold, tvRegion, setTvChannelStates]);
 
     // Automatic synchronization between zoneConfigs (Topology) and the Constant/House system gear ledgers.
     useEffect(() => {
@@ -1109,8 +1125,6 @@ const FestivalCoordinationTab: React.FC<FestivalCoordinationTabProps> = ({
         if (setIsCalculating) setIsCalculating(true);
         setIsGenerating(true); setOptimizationReport(null);
         const effectiveOverrides = overrides || equipmentOverrides;
-        let reqTotal = 0;
-        [...constantSystems, ...houseSystems, ...festivalActs].forEach(s => [...(s.micRequests || []), ...(s.iemRequests || [])].forEach(r => reqTotal += r.count));
         const manualEx = manualExclusions.split(',').map(s => { const parts = s.split('-').map(p => parseFloat(p.trim())); return parts.length === 2 ? { min: parts[0], max: parts[1] } : null; }).filter((x): x is { min: number, max: number } => x !== null);
         
         setProgress({ found: 0, processed: 0, total: 0, totalRequested: reqTotal, status: 'Initializing Engine...' });
@@ -1125,6 +1139,7 @@ const FestivalCoordinationTab: React.FC<FestivalCoordinationTabProps> = ({
             const { results: plan, report } = await generateFestivalPlan(festivalActs, newConstants, newHouse, zoneConfigs, distances, overlapMinutes, EQUIPMENT_DATABASE, manualEx, compatibilityMatrix, (p) => setProgress(prev => ({ ...p, totalRequested: reqTotal, status: p.status || prev.status })), undefined, null, effectiveOverrides, tvStates, tvRegion, wmasState);
             setFestivalActs(plan); setOptimizationReport(report);
             setIsHudMinimized(false);
+            setShowSuccess(true);
         } catch (e) { console.error(e); } finally { 
             setIsGenerating(false); 
             if (setIsCalculating) setIsCalculating(false);
@@ -1150,6 +1165,7 @@ const FestivalCoordinationTab: React.FC<FestivalCoordinationTabProps> = ({
     };
 
     const handleTvChannelCycle = (channel: number) => {
+        let nextMap: Record<number, TVChannelState> = {};
         setTvStates(prev => {
             const current = prev[channel] || 'available';
             let next: TVChannelState = 'available';
@@ -1158,10 +1174,13 @@ const FestivalCoordinationTab: React.FC<FestivalCoordinationTabProps> = ({
             else if (current === 'iem-only') next = 'both';
             else if (current === 'both') next = 'blocked';
             else if (current === 'blocked') next = 'available';
-            const nextMap = { ...prev, [channel]: next };
-            if (setTvChannelStates) setTvChannelStates(nextMap);
+            nextMap = { ...prev, [channel]: next };
             return nextMap;
         });
+        // Call the parent updater outside the setState callback to avoid "setState in render"
+        setTimeout(() => {
+            if (setTvChannelStates) setTvChannelStates(nextMap);
+        }, 0);
     };
 
     const handleBlockAllTvChannels = () => {
@@ -1354,6 +1373,21 @@ const FestivalCoordinationTab: React.FC<FestivalCoordinationTabProps> = ({
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 relative pb-20">
+            <EngagingLoadingState 
+                isOpen={isGenerating} 
+                progress={Math.round((progress.processed / (progress.totalRequested || 1)) * 100)} 
+                status={progress.status} 
+            />
+            <CelebratorySuccessState 
+                isOpen={showSuccess} 
+                onClose={() => setShowSuccess(false)} 
+                frequenciesFound={festivalActs.reduce((acc, a) => acc + (a.frequencies?.length || 0), 0) + constantSystems.reduce((acc, c) => acc + (c.frequencies?.length || 0), 0) + houseSystems.reduce((acc, h) => acc + (h.frequencies?.length || 0), 0)}
+                frequenciesRequired={reqTotal}
+                stats={[
+                    { label: 'Frequencies Coordinated', value: festivalActs.reduce((acc, a) => acc + (a.frequencies?.length || 0), 0) + constantSystems.reduce((acc, c) => acc + (c.frequencies?.length || 0), 0) + houseSystems.reduce((acc, h) => acc + (h.frequencies?.length || 0), 0) },
+                    { label: 'Stages', value: numZones }
+                ]}
+            />
             {isConverterOpen && (
                 <ExcelToCsvConverter 
                     onClose={() => setIsConverterOpen(false)} 

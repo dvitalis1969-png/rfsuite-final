@@ -5,6 +5,47 @@ import TvGrid from './TvGrid';
 import { Thresholds, Zone, ZoneConfig, Frequency, EquipmentProfile, CompatibilityLevel, TxType, TVChannelState, WMASState } from '../types';
 import { generateMultizoneFrequencies, getFinalThresholds, getCoordinationDiagnostics, CoordinationDiagnostic } from '../services/rfService';
 import { UK_TV_CHANNELS, EQUIPMENT_DATABASE, COMPATIBILITY_PROFILES } from '../constants';
+import { InfoTooltip } from './InfoTooltip';
+import { EngagingLoadingState, CelebratorySuccessState } from './EngagingStates';
+
+const ManualFreqInput: React.FC<{
+    value: number;
+    onChange: (val: number) => void;
+    className: string;
+}> = ({ value, onChange, className }) => {
+    const [localString, setLocalString] = useState<string>(value === 0 ? '' : value.toString());
+    const isFocused = useRef(false);
+
+    useEffect(() => {
+        if (!isFocused.current) {
+            setLocalString(value === 0 ? '' : value.toString());
+        }
+    }, [value]);
+
+    const handleBlur = () => {
+        isFocused.current = false;
+        const parsed = parseFloat(localString);
+        if (!isNaN(parsed) && parsed > 0) {
+            onChange(parsed);
+            setLocalString(parsed.toString());
+        } else {
+            setLocalString(value === 0 ? '' : value.toString());
+        }
+    };
+
+    return (
+        <input 
+            type="number" 
+            step="0.001" 
+            value={localString} 
+            onChange={e => setLocalString(e.target.value)}
+            onFocus={() => isFocused.current = true}
+            onBlur={handleBlur}
+            placeholder="MHz"
+            className={className} 
+        />
+    );
+};
 
 type ChannelState = 'available' | 'mic-only' | 'iem-only' | 'blocked';
 
@@ -19,6 +60,8 @@ interface MultizoneTabProps {
     setEquipmentGroups: (groups: ZoneConfig[]) => void;
     manualFrequencies?: Frequency[];
     setManualFrequencies?: (freqs: Frequency[]) => void;
+    manualConstraints?: Frequency[];
+    setManualConstraints?: (freqs: Frequency[]) => void;
     distances: number[][];
     setDistances: (distances: number[][]) => void;
     results: { zones: Zone[], spares: { mics: Frequency[], iems: Frequency[] } } | null;
@@ -48,6 +91,8 @@ const MultizoneTab: React.FC<MultizoneTabProps> = ({
     setEquipmentGroups,
     manualFrequencies = [],
     setManualFrequencies,
+    manualConstraints = [],
+    setManualConstraints,
     distances,
     setDistances,
     results,
@@ -67,6 +112,7 @@ const MultizoneTab: React.FC<MultizoneTabProps> = ({
     const channelStates = tvChannelStates || localChannelStates;
     const updateChannelStates = setTvChannelStates || setLocalChannelStates;
     const [showTabulation, setShowTabulation] = useState(false);
+    const [showSuccess, setShowSuccess] = useState(false);
     const [proximityThreshold, setProximityThreshold] = useState<number>(10);
     const [diagnostic, setDiagnostic] = useState<CoordinationDiagnostic | null>(null);
     const [numZonesInput, setNumZonesInput] = useState(numZones.toString());
@@ -347,6 +393,30 @@ const MultizoneTab: React.FC<MultizoneTabProps> = ({
         setManualFrequencies(manualFrequencies.filter(f => f.id !== id));
     };
 
+    const handleAddManualConstraint = () => {
+        if (!setManualConstraints) return;
+        const newConstraint: Frequency = {
+            id: `EXCL-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+            value: 0,
+            label: '',
+            locked: true,
+            type: 'generic'
+        };
+        setManualConstraints([...manualConstraints, newConstraint]);
+    };
+
+    const handleUpdateManualConstraint = (index: number, field: keyof Frequency, value: any) => {
+        if (!setManualConstraints) return;
+        const next = [...manualConstraints];
+        next[index] = { ...next[index], [field]: value };
+        setManualConstraints(next);
+    };
+
+    const handleRemoveManualConstraint = (index: number) => {
+        if (!setManualConstraints) return;
+        setManualConstraints(manualConstraints.filter((_, i) => i !== index));
+    };
+
     const handleCalculate = async () => {
         setIsLoading(true);
         setProgress(0);
@@ -384,7 +454,7 @@ const MultizoneTab: React.FC<MultizoneTabProps> = ({
                 channelStates,
                 'uk',
                 (p) => setProgress(p),
-                manualFrequencies,
+                [...manualFrequencies, ...manualConstraints.map(c => ({ ...c, zoneIndex: -1 }))],
                 zoneConfigs
             );
             setResults(calculatedResults);
@@ -399,6 +469,7 @@ const MultizoneTab: React.FC<MultizoneTabProps> = ({
                 { fundamental: 0.35, twoTone: 0.1, threeTone: 0.1, fiveTone: 0, sevenTone: 0 }
             );
             setDiagnostic(diag);
+            setShowSuccess(true);
         } catch (error) {
             console.error(error);
             toast.error("Calculation error.");
@@ -559,6 +630,20 @@ const MultizoneTab: React.FC<MultizoneTabProps> = ({
 
     return (
         <div className="space-y-6 relative">
+            <EngagingLoadingState 
+                isOpen={isLoading} 
+                progress={progress * 100} 
+            />
+            <CelebratorySuccessState 
+                isOpen={showSuccess} 
+                onClose={() => setShowSuccess(false)} 
+                frequenciesFound={(results?.zones || []).reduce((s, z) => s + (z.frequencies || []).filter(f=>f.value > 0).length, 0)}
+                frequenciesRequired={equipmentGroups.reduce((a, b) => a + b.count, 0)}
+                stats={[
+                    { label: 'Frequencies Coordinated', value: results?.zones.reduce((acc, z) => acc + (z.frequencies?.length || 0), 0) || 0 },
+                    { label: 'Zones', value: numZones }
+                ]}
+            />
             {/* Floating Calculate Button */}
             <div className="fixed bottom-8 right-8 z-[100] animate-in slide-in-from-bottom-10 duration-500">
                 <button 
@@ -582,6 +667,137 @@ const MultizoneTab: React.FC<MultizoneTabProps> = ({
                     )}
                 </button>
             </div>
+
+            <Card className="!bg-slate-900/80 border-rose-500/30">
+                <div className="flex justify-between items-center mb-6">
+                    <div>
+                        <CardTitle className="!mb-0 text-sm tracking-[0.2em] text-rose-300 uppercase font-black">📌 Fixed Frequency Injections</CardTitle>
+                        <p className="text-[9px] text-slate-500 uppercase font-bold tracking-tighter mt-1">Manually assign specific frequencies to zones (e.g., for fixed hardware).</p>
+                    </div>
+                    <button onClick={handleAddFixedFreq} className={greenButton}>+ Add Fixed Frequency</button>
+                </div>
+
+                {manualFrequencies.length > 0 ? (
+                    <div className="overflow-x-auto rounded-xl border border-white/5 shadow-2xl">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-slate-950 text-[9px] uppercase font-black text-slate-500 tracking-widest border-b border-white/10">
+                                    <th className="p-4">Zone Assignment</th>
+                                    <th className="p-4">Label / Designation</th>
+                                    <th className="p-4">Frequency (MHz)</th>
+                                    <th className="p-4">Type</th>
+                                    <th className="p-4 w-20 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-white/5">
+                                {manualFrequencies.map((freq) => (
+                                    <tr key={freq.id} className="hover:bg-rose-500/5 transition-colors group">
+                                        <td className="p-2">
+                                            <select 
+                                                value={freq.zoneIndex} 
+                                                onChange={e => handleUpdateFixedFreq(freq.id, 'zoneIndex', parseInt(e.target.value))}
+                                                className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-xs text-rose-300 font-black"
+                                            >
+                                                {zoneConfigs.map((zc, zIdx) => <option key={zIdx} value={zIdx}>Zone {zIdx + 1}: {zc.name}</option>)}
+                                            </select>
+                                        </td>
+                                        <td className="p-2">
+                                            <input 
+                                                type="text" 
+                                                value={freq.label || ''} 
+                                                onChange={e => handleUpdateFixedFreq(freq.id, 'label', e.target.value)} 
+                                                placeholder="e.g. Presenter Mic"
+                                                className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1.5 text-xs text-white font-bold"
+                                            />
+                                        </td>
+                                        <td className="p-2">
+                                            <input 
+                                                type="number" step="0.001"
+                                                value={freq.value || ''} 
+                                                onChange={e => handleUpdateFixedFreq(freq.id, 'value', parseFloat(e.target.value))} 
+                                                className="w-24 bg-slate-950 border border-slate-700 rounded px-2 py-1.5 text-xs text-center text-cyan-400 font-mono font-black"
+                                            />
+                                        </td>
+                                        <td className="p-2">
+                                            <select 
+                                                value={freq.type || 'generic'} 
+                                                onChange={e => handleUpdateFixedFreq(freq.id, 'type', e.target.value)}
+                                                className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-[10px] uppercase font-black text-slate-200"
+                                            >
+                                                <option value="generic">Generic</option>
+                                                <option value="mic">Mic</option>
+                                                <option value="iem">IEM</option>
+                                                <option value="comms">Comms</option>
+                                            </select>
+                                        </td>
+                                        <td className="p-2 text-right">
+                                            <button 
+                                                onClick={() => handleRemoveFixedFreq(freq.id)} 
+                                                className="text-rose-500 hover:text-rose-400 font-black text-[16px] opacity-0 group-hover:opacity-100 transition-opacity pr-2"
+                                                title="Remove Fixed Frequency"
+                                            >
+                                                &times;
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                ) : (
+                    <div className="text-center py-8 bg-slate-950/50 rounded-xl border border-dashed border-slate-700">
+                        <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">No fixed frequencies added.</p>
+                    </div>
+                )}
+            </Card>
+
+            <Card className="!bg-slate-900/80 border-amber-500/30">
+                <div className="flex justify-between items-center mb-6">
+                    <div>
+                        <CardTitle className="!mb-0 text-sm tracking-[0.2em] text-amber-300 uppercase font-black">✍️ Manual Exclusions</CardTitle>
+                        <p className="text-[9px] text-slate-500 uppercase font-bold tracking-tighter mt-1">Enter individual spot frequencies to globally avoid during coordination.</p>
+                    </div>
+                    <button onClick={handleAddManualConstraint} className="px-4 py-2 bg-amber-600/20 text-amber-300 border border-amber-500/40 hover:bg-amber-600 hover:text-white rounded-lg font-semibold uppercase tracking-wide transition-all duration-200 text-xs">+ Add Exclusion</button>
+                </div>
+
+                <div className="flex flex-wrap gap-3 custom-scrollbar">
+                    {manualConstraints.map((freq, i) => (
+                        <div key={freq.id || i} className="flex flex-col gap-2 items-center bg-slate-950 p-3 rounded-xl border border-white/5 group hover:border-amber-500/30 transition-all relative w-32">
+                            <div className="flex items-center justify-between w-full">
+                                <label className="text-[9px] text-slate-600 font-mono font-bold">{i + 1}</label>
+                                <button onClick={() => handleRemoveManualConstraint(i)} className="text-red-400/50 hover:text-red-400 transition-colors p-1 text-lg leading-none">&times;</button>
+                            </div>
+                            <ManualFreqInput 
+                                value={freq.value} 
+                                onChange={val => handleUpdateManualConstraint(i, 'value', val)}
+                                className="bg-slate-900 border border-slate-700 rounded-lg p-2 text-amber-300 text-xs font-black font-mono focus:ring-1 focus:ring-amber-500 outline-none shadow-inner w-full text-center"
+                            />
+                            <input 
+                                type="text" 
+                                placeholder="Label" 
+                                value={freq.label || ''} 
+                                onChange={e => handleUpdateManualConstraint(i, 'label', e.target.value)}
+                                className="bg-slate-900 border border-slate-700 rounded-lg p-2 text-slate-300 text-[10px] font-bold w-full text-center"
+                            />
+                            <select 
+                                value={freq.type || 'generic'} 
+                                onChange={e => handleUpdateManualConstraint(i, 'type', e.target.value)}
+                                className="bg-slate-800 border border-slate-700 rounded p-1 text-slate-400 text-[8px] font-black uppercase tracking-tighter w-full text-center"
+                            >
+                                <option value="mic">Mic</option>
+                                <option value="iem">IEM</option>
+                                <option value="comms">Comms</option>
+                                <option value="generic">Gen</option>
+                            </select>
+                        </div>
+                    ))}
+                    {manualConstraints.length === 0 && (
+                        <div className="py-10 text-center border-2 border-dashed border-white/5 rounded-2xl bg-black/20 w-full">
+                            <p className="text-[10px] text-slate-600 font-black uppercase tracking-widest">No Manual Exclusions Entered</p>
+                        </div>
+                    )}
+                </div>
+            </Card>
 
             <Card>
                 <div className="flex justify-between items-center mb-6">
@@ -873,89 +1089,6 @@ const MultizoneTab: React.FC<MultizoneTabProps> = ({
                         {isLoading ? 'DEEP SCAN IN PROGRESS...' : 'GENERATE MULTI-EQUIPMENT PLAN'}
                     </button>
                 </div>
-            </Card>
-
-            <Card className="!bg-slate-900/80 border-rose-500/30">
-                <div className="flex justify-between items-center mb-6">
-                    <div>
-                        <CardTitle className="!mb-0 text-sm tracking-[0.2em] text-rose-300 uppercase font-black">📌 Fixed Frequency Injections</CardTitle>
-                        <p className="text-[9px] text-slate-500 uppercase font-bold tracking-tighter mt-1">Manually assign specific frequencies to zones (e.g., for fixed hardware).</p>
-                    </div>
-                    <button onClick={handleAddFixedFreq} className={greenButton}>+ Add Fixed Frequency</button>
-                </div>
-
-                {manualFrequencies.length > 0 ? (
-                    <div className="overflow-x-auto rounded-xl border border-white/5 shadow-2xl">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="bg-slate-950 text-[9px] uppercase font-black text-slate-500 tracking-widest border-b border-white/10">
-                                    <th className="p-4">Zone Assignment</th>
-                                    <th className="p-4">Label / Designation</th>
-                                    <th className="p-4">Frequency (MHz)</th>
-                                    <th className="p-4">Type</th>
-                                    <th className="p-4 w-20 text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-white/5">
-                                {manualFrequencies.map((freq) => (
-                                    <tr key={freq.id} className="hover:bg-rose-500/5 transition-colors group">
-                                        <td className="p-2">
-                                            <select 
-                                                value={freq.zoneIndex} 
-                                                onChange={e => handleUpdateFixedFreq(freq.id, 'zoneIndex', parseInt(e.target.value))}
-                                                className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-xs text-rose-300 font-black"
-                                            >
-                                                {zoneConfigs.map((zc, zIdx) => <option key={zIdx} value={zIdx}>Zone {zIdx + 1}: {zc.name}</option>)}
-                                            </select>
-                                        </td>
-                                        <td className="p-2">
-                                            <input 
-                                                type="text" 
-                                                value={freq.label || ''} 
-                                                onChange={e => handleUpdateFixedFreq(freq.id, 'label', e.target.value)} 
-                                                placeholder="e.g. Presenter Mic"
-                                                className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1.5 text-xs text-white font-bold"
-                                            />
-                                        </td>
-                                        <td className="p-2">
-                                            <input 
-                                                type="number" step="0.001"
-                                                value={freq.value || ''} 
-                                                onChange={e => handleUpdateFixedFreq(freq.id, 'value', parseFloat(e.target.value))} 
-                                                className="w-24 bg-slate-950 border border-slate-700 rounded px-2 py-1.5 text-xs text-center text-cyan-400 font-mono font-black"
-                                            />
-                                        </td>
-                                        <td className="p-2">
-                                            <select 
-                                                value={freq.type || 'generic'} 
-                                                onChange={e => handleUpdateFixedFreq(freq.id, 'type', e.target.value)}
-                                                className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-[10px] uppercase font-black text-slate-200"
-                                            >
-                                                <option value="generic">Generic</option>
-                                                <option value="mic">Mic</option>
-                                                <option value="iem">IEM</option>
-                                                <option value="comms">Comms</option>
-                                            </select>
-                                        </td>
-                                        <td className="p-2 text-right">
-                                            <button 
-                                                onClick={() => handleRemoveFixedFreq(freq.id)} 
-                                                className="text-rose-500 hover:text-rose-400 font-black text-[16px] opacity-0 group-hover:opacity-100 transition-opacity pr-2"
-                                                title="Remove Fixed Frequency"
-                                            >
-                                                &times;
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                ) : (
-                    <div className="text-center py-8 bg-slate-950/50 rounded-xl border border-dashed border-slate-700">
-                        <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">No fixed frequencies added.</p>
-                    </div>
-                )}
             </Card>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

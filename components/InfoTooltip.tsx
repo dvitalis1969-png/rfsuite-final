@@ -65,12 +65,12 @@ export const InfoTooltip: React.FC<InfoTooltipProps> = ({ content, size = 14 }) 
               style={{
                 position: 'fixed',
                 top: coords.top,
-                left: Math.max(120, Math.min(window.innerWidth - 120, coords.left)),
+                left: Math.max(160, Math.min(window.innerWidth - 160, coords.left)),
                 transform: 'translate(-50%, -100%)',
-                zIndex: 9999,
+                zIndex: 10000,
                 marginTop: '-12px',
                 width: 'max-content',
-                maxWidth: '240px',
+                maxWidth: 'min(320px, 80vw)',
               }}
               className="p-3 bg-slate-800 text-slate-200 text-xs rounded-xl shadow-2xl border border-slate-700 pointer-events-none leading-relaxed"
             >

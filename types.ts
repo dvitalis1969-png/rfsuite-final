@@ -308,6 +308,7 @@ export interface MultizonePlanningState {
     zoneConfigs: ZoneConfig[]; // Physical zone data
     equipmentGroups?: ZoneConfig[]; // Deployment gear requests
     manualFrequencies?: Frequency[]; // Fixed frequencies
+    manualConstraints?: Frequency[]; // Global manual exclusions
     distances: number[][];
     results: { zones: Zone[], spares: { mics: Frequency[], iems: Frequency[] } } | null;
     siteMapState: SiteMapState;

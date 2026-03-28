@@ -42,33 +42,45 @@ export const CATEGORY_GUIDES: Record<AppCategory, GuideSection[]> = {
     ],
     coordination: [
         {
-            title: "Spatiotemporal Site Architecture",
-            description: "Standard planners treat a venue as a single point in space; we treat it as a physical landscape. By defining the distance between stages, the engine applies the Inverse Square Law to 'Recycle' frequencies. This allows for massive frequency reuse across a site that would be mathematically impossible in a non-spatial coordinator.",
+            title: "Festival Coordination: The Masterclass",
+            description: "Welcome to the pinnacle of large-scale RF planning. Standard calculators treat your entire festival site as a single, crowded room, leading to artificial spectrum exhaustion. We built this engine differently. We treat your venue as a physical, spatiotemporal landscape. By understanding the exact distances between your stages and the times acts are performing, our engine 'recycles' frequencies, achieving massive reuse that would otherwise be mathematically impossible. Prepare to coordinate like a true RF architect.",
             steps: [
-                "Use the 'Spatial Map' to drag-and-drop stages onto your site diagram.",
-                "Configure 'Time Overlap' buffers. Frequencies are automatically released and recycled the moment an act finishes their set.",
-                "The engine calculates a unique 'Interference Matrix' for every stage-to-stage pair based on distance-weighted attenuation."
+                "1. INITIALIZE STAGES: Scroll to the 'Stages / Zones' section. Click the '+ Add Stage' button. Provide a unique name (e.g., 'Main Stage', 'Acoustic Tent'). Repeat for every physical location.",
+                "2. POPULATE EQUIPMENT: For each stage, click '+ Add Equipment'. Select the exact Make and Model from our database. Enter the number of channels required. Our engine automatically loads the 'Physics Profile' for each device, including filter width and IMD characteristics.",
+                "3. MAP THE VENUE: Scroll to the 'Distance Matrix (m)'. This is the most critical step. Enter the physical distance (in meters) between every stage pair. Accurate distances are vital—the engine uses the Inverse Square Law to calculate signal attenuation between stages.",
+                "4. DEFINE TEMPORAL OVERLAP: Use the 'Time Overlap' feature to indicate if stages are active simultaneously. If stages are never active at the same time, the engine will automatically recycle frequencies, doubling your capacity.",
+                "5. SET GLOBAL CONSTRAINTS: Go to 'TV Channel & Global Exclusions'. Select your region to automatically block active local DTV broadcasts. Use 'Manual Exclusions' to lock out specific frequencies (e.g., venue security, local emergency services).",
+                "6. INJECT FIXED FREQUENCIES: If touring bands bring their own locked gear, use 'Fixed Frequency Injections' to force the engine to work around their immovable frequencies.",
+                "7. EXECUTE COORDINATION: Click the 'GENERATE FESTIVAL PLAN' button. Our Monte Carlo stochastic algorithm will run thousands of simulations to find the plan with the highest possible Signal-to-Noise Ratio (SNR) headroom.",
+                "8. REVIEW & EXPORT: Once the calculation finishes, review the 'Coordination Results' dashboard. When satisfied, click 'Export CSV' to generate the master frequency plan for your stage managers."
             ],
             tips: [
-                "Distance is your best filter. A stage 500m away is effectively invisible to your local receivers, allowing 100% frequency reuse.",
+                "The 500m Rule: A stage 500m away is effectively invisible to local receivers. Maximize your distance matrix to unlock 100% frequency reuse.",
+                "If the engine struggles, try changing the Global Settings 'Compatibility Profile' to 'Robust' (safer, fewer freqs) or 'Aggressive' (tighter spacing, more freqs).",
                 "Use 'Compatibility Links' for stages that share an antenna backbone or are within the same 'RF Line of Sight'."
             ],
-            physics: "The coordinator models signal propagation using the Friis Transmission Equation. As distance increases, the interference energy drops below the 'Capture Effect' threshold of the receiver (approx. 18.75kHz for high-quality FM/Digital), allowing for the safe deployment of overlapping carriers at range."
+            physics: "We model signal propagation using the Friis Transmission Equation. As distance increases, interference energy drops exponentially. Once an aggressor signal drops below the 'Capture Effect' threshold of the victim receiver (approx. 18.75kHz for high-quality FM/Digital), the receiver completely ignores it. We calculate a unique 'Interference Matrix' for every stage-to-stage pair based on this distance-weighted attenuation, dynamically relaxing IMD constraints where physics allows."
         }
     ],
     multizone: [
         {
-            title: "High-Density Architectural Coordination",
-            description: "Designed for exhibition halls and corporate campuses where hundreds of channels must exist within a small footprint. This module treats every booth or room as an 'RF Island', utilizing structural shielding and proximity logic to squeeze more gear into the air than any other tool available on the web.",
+            title: "Exhibition & High-Density Coordination: The Masterclass",
+            description: "Trade shows, corporate campuses, and exhibition halls are RF warzones. You are tasked with cramming hundreds of wireless channels into a single building, often with exhibitors bringing rogue, uncoordinated gear. This module is your ultimate weapon. It treats every booth or breakout room as an isolated 'RF Island', utilizing structural shielding and proximity logic to squeeze more gear into the air than any standard calculator could ever permit.",
             steps: [
-                "Grid your venue map. Proximity between adjacent booths is the primary source of 'Walk-over' interference.",
-                "Deploy 'Cloned Groups' to quickly assign standard gear racks to multiple locations.",
-                "Apply 'Proximity Guard' values—typically 10m for indoor environments with standard partition walls."
+                "1. DEFINE ZONES: Scroll to 'Exhibition Zones & Booths'. Click '+ Add Zone' for every booth, breakout room, or area requiring wireless. Name them clearly (e.g., 'Booth 101', 'Room A').",
+                "2. CONFIGURE EQUIPMENT: Add equipment to each zone. If you are deploying 20 identical breakout rooms, use the 'Clone Group' feature to instantly duplicate your standard gear rack across multiple zones—saving you hours of manual entry.",
+                "3. DEFINE PROXIMITY: Scroll to the 'Distance Matrix (m)'. In indoor environments, walls and structures absorb RF energy. Enter the physical distances between booths. The engine uses this to calculate 'Walk-over' interference, allowing booths that are far apart to safely reuse the same spectrum.",
+                "4. LOCK VIP FREQUENCIES: If a major exhibitor arrives with a rack of gear locked to specific frequencies, use 'Fixed Frequency Injections' to assign their exact frequencies to their zone. The engine will seamlessly weave the rest of the show around them.",
+                "5. SET GLOBAL EXCLUSIONS: Block out local DTV channels in the 'TV Channel' section. Use 'Manual Exclusions' to globally ban specific frequencies (like venue-wide security comms) from being assigned to any booth.",
+                "6. EXECUTE CALCULATION: Click 'GENERATE MULTI-EQUIPMENT PLAN'. The engine will perform a highly aggressive, high-density combinatorial analysis, prioritizing Signal-to-Noise Ratio (SNR) protection over total IMD elimination—the only way to survive a trade show.",
+                "7. EXPORT INDIVIDUAL PLANS: The master CSV is great for you, but exhibitors only care about their own gear. Use the 'WWB Group Export' or individual zone exports to hand each booth their own custom, pre-validated frequency file."
             ],
             tips: [
-                "Coordination for trade shows is a battle of 'SNR Protection' rather than total IMD elimination.",
-                "The 'WWB Group Export' allows you to provide each exhibitor with their own custom, pre-validated frequency file."
-            ]
+                "Use the 'Global Separation' tool above the Distance Matrix to quickly set a default baseline distance (e.g., 15m) between all booths, then manually adjust the adjacent ones.",
+                "Coordination for trade shows is a battle of 'SNR Protection'. The noise floor is incredibly high. Ensure your transmitters are close to their receivers to overcome the ambient RF hash.",
+                "If you run out of spectrum, switch your digital gear to 'Linear Mode' (if supported, like Shure Axient). This bypasses legacy IMD floors and increases yield by up to 40%."
+            ],
+            physics: "This module relies on Free-Space Path Loss (FSPL) combined with structural attenuation assumptions. By calculating the energy drop-off between booths, the engine determines the exact moment a signal from Booth A drops below the noise floor of Booth B. Once that threshold is crossed, the engine safely reassigns that exact same frequency to Booth B, maximizing spectral efficiency."
         }
     ],
     analysis: [
@@ -106,22 +118,27 @@ export const CATEGORY_GUIDES: Record<AppCategory, GuideSection[]> = {
     ],
     comms: [
         {
-            title: "Talkback & The 25m Spatial Rule",
-            description: "Communication systems are the 'Victims' of the RF world. Because base station transmitters are often high-power (up to 2W) and continuous, intermodulation is a severe risk. Based on empirical field tests, mixing efficiency for IMD drops below the noise floor beyond 25m of separation. This app automatically 'Relaxes' constraints for zones outside this boundary, allowing for extreme spectral density.",
+            title: "Talkback & Zonal Comms: The Masterclass",
+            description: "Communication systems (like Riedel Bolero, Clear-Com, or analog two-ways) are the 'bullies' of the RF world. Their base stations transmit continuously at incredibly high power (often up to 2 Watts). If placed too close to your delicate wireless microphones, they will generate massive intermodulation products that destroy your audio. This module is engineered specifically to isolate and coordinate these high-power systems, keeping your comms crystal clear and your microphones safe.",
             steps: [
-                "Set your 'Base Tx' (to beltpacks) and 'Port Rx' (back to base) bands.",
-                "Ensure 'Zone Distances' reflect the physical reality of your compound.",
-                "Audit the results with the 'Intermod Physics Auditor' to visualize the 3rd-order collision space."
+                "1. DEFINE BANDS: At the top, define your 'Base TX Band' (the frequencies the base station blasts out to the beltpacks) and your 'Port RX Band' (the frequencies the beltpacks whisper back to the base). Keep these bands as far apart as physically possible.",
+                "2. CONFIGURE ZONES: Scroll to 'Talkback Zones'. For a single setup, just use one zone. For massive events (Olympics, multi-stage festivals), click '+ Add Zone' for every physical location that has a base station (e.g., 'Main Stage Comms', 'Broadcast Compound').",
+                "3. ADD CHANNELS: Inside each Zone, click '+ Add TX' for your continuous base station transmitters, and '+ Add RX' for your beltpack receivers.",
+                "4. DEFINE PROXIMITY: Scroll to the 'Distance Matrix (m)' and enter the physical distance between your comms zones. This is critical for our 'IMD Compatibility Relaxation' algorithm. If two base stations are more than 25 meters apart, the engine can drastically relax the spacing rules and reuse spectrum.",
+                "5. SET GLOBAL EXCLUSIONS: Block out local DTV channels and enter any 'Manual Exclusions' (like local police or aviation frequencies) that you must absolutely avoid.",
+                "6. EXECUTE CALCULATION: Click 'GENERATE ZONAL PLAN'. The engine will calculate a master plan that reuses frequencies across distant zones while keeping local zones completely, mathematically intermod-free.",
+                "7. EXPORT RESULTS: Review the 'Coordination Results' for a zone-by-zone breakdown, and export your CSV for deployment."
             ],
             tips: [
-                "Receiver sensitivity is your priority. A -95dBm IMD product can break the squelch of a base station and cause 'Static' noise.",
-                "Maintain at least 150kHz of offset between base TX carriers to minimize heat build-up and non-linear mixing in antenna combiners."
+                "Receiver sensitivity is your priority. A tiny -95dBm IMD product can break the squelch of a base station and cause maddening 'Static' noise in everyone's headset. Give your RX band the cleanest spectrum.",
+                "Maintain at least 150kHz of offset between base TX carriers. This minimizes heat build-up and non-linear mixing inside your expensive antenna combiners.",
+                "Distance is your ultimate weapon. Moving a base station antenna just 10 meters further away from your microphone receivers can solve 90% of your intermod problems."
             ],
-            physics: "Mixing efficiency follows a non-linear power curve. At 25m, the energy from a 50mW beltpack has dropped by approx. 53dB compared to the level at 10cm. This is the 'Conversion Loss' boundary: if aggressor signals reach the non-linear stage at levels below -40dBm, the resulting IMD products sit safely below the thermal noise floor of professional receivers."
+            physics: "Mixing efficiency follows a non-linear power curve. At 25 meters, the energy from a 50mW beltpack has dropped by approximately 53dB compared to its level at 10cm. This is the 'Conversion Loss Boundary'. If aggressor signals reach the non-linear stage (the receiver front-end) at levels below -40dBm, the resulting 3rd-order IMD products sit safely below the thermal noise floor of professional receivers. Our engine dynamically calculates this boundary, relaxing IMD constraints for distant zones to unlock unprecedented spectral density."
         },
         {
             title: "The Physics of Frequency Reuse Offsets",
-            description: "Harness the power of precision frequency offsets based on real-world ACR (Adjacent Channel Rejection) measurements. Not all reuse is equal; we use specific scientific benchmarks to determine the minimum safe distance for different frequency offsets.",
+            description: "Harness the power of precision frequency offsets based on real-world Adjacent Channel Rejection (ACR) measurements. Not all reuse is equal; we use specific scientific benchmarks to determine the minimum safe distance for different frequency offsets.",
             steps: [
                 "25kHz Offset: The 'Critical Limit'. Requires >400m of separation due to standard receiver filter slopes.",
                 "50kHz - 100kHz Offset: The 'Buffer Zone'. Safe for stages 75m to 150m apart.",

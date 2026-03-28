@@ -190,9 +190,13 @@ const TvGrid: React.FC<TvGridProps> = ({
                     const erpData = tvChannelErpData?.[ch] || hookErpData?.[ch];
 
                     let channelClasses = 'p-1.5 text-center rounded-lg border-2 transition-all cursor-pointer select-none ';
-                    if (state === 'blocked') channelClasses += 'bg-rose-600 border-rose-500 hover:bg-rose-500 shadow-lg';
+                    if (state === 'blocked') {
+                        if (erpData) channelClasses += 'bg-rose-600 border-rose-500 hover:bg-rose-500 shadow-lg'; // Automatic
+                        else channelClasses += 'bg-rose-800 border-rose-700 hover:bg-rose-700 shadow-lg'; // Manual
+                    }
                     else if (state === 'mic-only') channelClasses += 'bg-sky-400 border-sky-300 hover:bg-sky-300 shadow-lg';
                     else if (state === 'iem-only') channelClasses += 'bg-amber-500 border-amber-400 hover:bg-amber-400 shadow-lg';
+                    else if (state === 'both') channelClasses += 'bg-indigo-600 border-indigo-500 hover:bg-indigo-500 shadow-lg';
                     else channelClasses += 'bg-emerald-500/5 border-emerald-500/20 hover:border-emerald-500/50';
 
                     return (
@@ -210,7 +214,8 @@ const TvGrid: React.FC<TvGridProps> = ({
                                 <div className="mt-0.5 text-[7px] font-black uppercase text-white/40">
                                     {state === 'mic-only' && 'MIC'}
                                     {state === 'iem-only' && 'IEM'}
-                                    {state === 'blocked' && 'OFF'}
+                                    {state === 'both' && 'M+I'}
+                                    {state === 'blocked' && (erpData ? 'TV' : 'OFF')}
                                     {state === 'available' && '—'}
                                 </div>
                             </button>
@@ -225,6 +230,50 @@ const TvGrid: React.FC<TvGridProps> = ({
                     );
                 })}
             </div>
+            {/* Legend and Instructions */}
+            <div className="mt-4 pt-4 border-t border-white/5">
+                <div className="flex flex-wrap justify-center gap-x-4 gap-y-2">
+                    <div className="flex items-center gap-1.5">
+                        <div className="w-2.5 h-2.5 rounded bg-rose-600 border border-rose-500"></div>
+                        <span className="text-[8px] font-black uppercase text-slate-400">TV (Auto)</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <div className="w-2.5 h-2.5 rounded bg-rose-800 border border-rose-700"></div>
+                        <span className="text-[8px] font-black uppercase text-slate-400">User (Manual)</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <div className="w-2.5 h-2.5 rounded bg-sky-400 border border-sky-300"></div>
+                        <span className="text-[8px] font-black uppercase text-slate-400">Mic Only</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <div className="w-2.5 h-2.5 rounded bg-amber-500 border border-amber-400"></div>
+                        <span className="text-[8px] font-black uppercase text-slate-400">IEM Only</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <div className="w-2.5 h-2.5 rounded bg-indigo-600 border border-indigo-500"></div>
+                        <span className="text-[8px] font-black uppercase text-slate-400">Both M+I</span>
+                    </div>
+                </div>
+                <div className="mt-3 flex flex-col items-center gap-1">
+                    <p className="text-[7px] text-slate-600 font-medium uppercase tracking-widest text-center max-w-lg">
+                        Channels clear (Emerald) if no transmitter/scan detected. Manual overrides (Mic/IEM/Both) exclude equipment types. Use 'Clear All' to reset.
+                    </p>
+                </div>
+                <div className="mt-4 p-3 bg-slate-900/50 rounded-lg border border-slate-800 text-[10px] text-slate-400 font-mono">
+                    <p className="font-bold text-slate-300 mb-2">TV channel status is a derivation of equation:</p>
+                    <p className="text-center text-xs text-indigo-300 mb-3">
+                        P<sub>Mic</sub> - P<sub>TV</sub> + 20 * log<sub>10</sub>(d<sub>TV</sub> / d<sub>Mic</sub>) ≥ Margin
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
+                        <p><span className="text-slate-300 font-bold">P<sub>Mic</sub>:</span> Microphone Transmitter Power (dBm)</p>
+                        <p><span className="text-slate-300 font-bold">P<sub>TV</sub>:</span> TV Transmitter Power (ERP in dBm)</p>
+                        <p><span className="text-slate-300 font-bold">d<sub>TV</sub>:</span> Distance to TV Transmitter (km)</p>
+                        <p><span className="text-slate-300 font-bold">d<sub>Mic</sub>:</span> Distance from Mic to Receiver (km)</p>
+                        <p className="sm:col-span-2"><span className="text-slate-300 font-bold">Margin:</span> Required Signal-to-Interference Ratio (dB) = 20dB</p>
+                    </div>
+                </div>
+            </div>
+
             {infoChannel !== null && (
                 <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setInfoChannel(null)}>
                     <div className="bg-slate-900 border border-slate-700 p-6 rounded-xl w-full max-w-sm text-slate-200" onClick={e => e.stopPropagation()}>

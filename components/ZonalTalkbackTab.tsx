@@ -5,6 +5,7 @@ import Card, { CardTitle, Placeholder } from './Card';
 import { DuplexPair, ZoneConfig, SiteMapState, ZonalResult, TxType, TalkbackIntermods, IntermodProduct, Conflict, Frequency, Thresholds, TalkbackMode } from '../types';
 import { TALKBACK_DEFINITIONS, TALKBACK_FIXED_PAIRS, DISCRETE_TALKBACK_PAIRS, TALKBACK_FORBIDDEN_RANGES_BY_COUNTRY } from '../constants';
 import { generateZonalTalkbackPairs, calculateTalkbackIntermods, checkTalkbackCompatibility } from '../services/rfService';
+import { EngagingLoadingState, CelebratorySuccessState } from './EngagingStates';
 
 interface DuplexPairWithBw extends DuplexPair {
     txBw?: number;
@@ -120,6 +121,7 @@ const ZonalTalkbackTab: React.FC<ZonalTalkbackTabProps> = ({
     const [manualPairs, setManualPairs] = useState<DuplexPairWithBw[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [progress, setProgress] = useState(0);
+    const [showSuccess, setShowSuccess] = useState(false);
     const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
     const [sortField, setSortField] = useState<string>('tx');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -343,6 +345,7 @@ const ZonalTalkbackTab: React.FC<ZonalTalkbackTabProps> = ({
                 abortController.signal
             );
             setResults(zonalResults);
+            setShowSuccess(true);
         } catch (error: any) { 
             if (error.message === 'Calculation aborted by user') {
                 console.log('Calculation aborted');
@@ -688,6 +691,20 @@ const ZonalTalkbackTab: React.FC<ZonalTalkbackTabProps> = ({
 
     return (
         <div className="space-y-4 mx-auto">
+            <EngagingLoadingState 
+                isOpen={isLoading} 
+                progress={progress * 100} 
+            />
+            <CelebratorySuccessState 
+                isOpen={showSuccess} 
+                onClose={() => setShowSuccess(false)} 
+                frequenciesFound={results?.reduce((acc, z) => acc + z.pairs.length, 0) || 0}
+                frequenciesRequired={talkbackZoneConfigs.reduce((acc, z) => acc + z.pairCount + (z.simplexTxCount || 0) + (z.simplexWalkieCount || 0), 0)}
+                stats={[
+                    { label: 'Zones Coordinated', value: results?.length || 0 },
+                    { label: 'Total Frequencies', value: results?.reduce((acc, z) => acc + z.pairs.length, 0) || 0 }
+                ]}
+            />
              <Card>
                 <div className="flex justify-between items-center mb-6">
                     <CardTitle className="!mb-0">1. Configure Zonal Bands</CardTitle>
