@@ -648,7 +648,8 @@ const App: React.FC = () => {
                 ...user,
                 subscription: data.subscription || 'none',
                 subscriptionStatus: data.subscriptionStatus || 'none',
-                stripeCustomerId: data.stripeCustomerId || null
+                stripeCustomerId: data.stripeCustomerId || null,
+                role: data.role || 'user'
             });
         }
     };
@@ -694,6 +695,7 @@ const App: React.FC = () => {
                     let subscription = 'none';
                     let subscriptionStatus = 'none';
                     let stripeCustomerId = null;
+                    let role = 'user';
                     try {
                         const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
                         if (userDoc.exists()) {
@@ -701,6 +703,7 @@ const App: React.FC = () => {
                             subscriptionStatus = data.subscriptionStatus || 'none';
                             subscription = data.subscription || subscriptionStatus;
                             stripeCustomerId = data.stripeCustomerId || null;
+                            role = data.role || 'user';
                         }
                     } catch (err) {
                         console.error("Error fetching user data:", err);
@@ -713,7 +716,8 @@ const App: React.FC = () => {
                         name: firebaseUser.displayName || firebaseUser.email?.split('@')[0],
                         subscription: subscription,
                         subscriptionStatus: subscriptionStatus,
-                        stripeCustomerId: stripeCustomerId
+                        stripeCustomerId: stripeCustomerId,
+                        role: role
                     });
                 } else {
                     setIsAuthenticated(false);

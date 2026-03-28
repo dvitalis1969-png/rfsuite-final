@@ -122,8 +122,44 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({ user, onClose, onLo
     };
 
     React.useEffect(() => {
-        fetchLatestUser();
+        if (!user?.id) return;
 
+        let unsubscribe: () => void;
+        
+        const setupListener = async () => {
+            const { doc, onSnapshot } = await import('firebase/firestore');
+            unsubscribe = onSnapshot(doc(db, 'users', user.id), (docSnapshot) => {
+                if (docSnapshot.exists()) {
+                    const data = docSnapshot.data();
+                    setCurrentUser(prev => ({
+                        ...prev,
+                        ...user,
+                        name: data.name || user.name,
+                        title: data.title || user.title,
+                        location: data.location || user.location,
+                        currentTour: data.currentTour || user.currentTour,
+                        specialties: data.specialties || user.specialties,
+                        gearInventory: data.gearInventory || user.gearInventory,
+                        availableForWork: data.availableForWork !== undefined ? data.availableForWork : user.availableForWork,
+                        subscription: data.subscription || 'none',
+                        subscriptionStatus: data.subscriptionStatus || 'none',
+                        stripeCustomerId: data.stripeCustomerId || null
+                    }));
+                    if (onRefreshUser) onRefreshUser();
+                }
+            }, (error) => {
+                console.error("Error listening to user data:", error);
+            });
+        };
+
+        setupListener();
+
+        return () => {
+            if (unsubscribe) unsubscribe();
+        };
+    }, [user?.id]);
+
+    React.useEffect(() => {
         // Check if config is available (via a health check or similar)
         const checkConfig = async () => {
             try {
@@ -178,11 +214,11 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({ user, onClose, onLo
         }
     };
 
-    // Replace these with your actual Stripe Price IDs
+    // Replace these with your actual Stripe Price IDs or set them in your environment variables
     const tiers = [
-        { id: 'price_1TFx8PL5JAY1lJg5iiPBdgWN', name: '48 Hour Pass', price: '£5.99', icon: <Clock className="w-5 h-5" />, desc: 'Single Event Access' },
-        { id: 'price_1TFx8gL5JAY1lJg5po1s8JQ2', name: '7 Day Pass', price: '£12.99', icon: <Calendar className="w-5 h-5" />, desc: 'Festival Week Access' },
-        { id: 'price_1TFx90L5JAY1lJg5fCz7HRne', name: '1 Month Pro', price: '£26.99', icon: <Zap className="w-5 h-5" />, desc: 'Continuous Professional Use' }
+        { id: import.meta.env.VITE_STRIPE_PRICE_48H || 'price_1TFx8PL5JAY1lJg5iiPBdgWN', name: '48 Hour Pass', price: '£5.99', icon: <Clock className="w-5 h-5" />, desc: 'Single Event Access' },
+        { id: import.meta.env.VITE_STRIPE_PRICE_7D || 'price_1TFx8gL5JAY1lJg5po1s8JQ2', name: '7 Day Pass', price: '£12.99', icon: <Calendar className="w-5 h-5" />, desc: 'Festival Week Access' },
+        { id: import.meta.env.VITE_STRIPE_PRICE_1M || 'price_1TFx90L5JAY1lJg5fCz7HRne', name: '1 Month Pro', price: '£26.99', icon: <Zap className="w-5 h-5" />, desc: 'Continuous Professional Use' }
     ];
 
     // Use relative path for API calls - this works on both localhost and Render automatically
@@ -216,7 +252,11 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({ user, onClose, onLo
             
             const data = await response.json();
             if (data.url) {
-                window.location.href = data.url;
+                const newWindow = window.open(data.url, '_blank');
+                if (!newWindow) {
+                    toast.error('Please allow popups to open the Stripe checkout page.');
+                }
+                setIsLoading(false);
             } else {
                 const errorMsg = data.error || 'Failed to create checkout session';
                 setLastError(errorMsg);
@@ -257,7 +297,11 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({ user, onClose, onLo
             
             const data = await response.json();
             if (data.url) {
-                window.location.href = data.url;
+                const newWindow = window.open(data.url, '_blank');
+                if (!newWindow) {
+                    toast.error('Please allow popups to open the Stripe billing portal.');
+                }
+                setIsLoading(false);
             } else {
                 throw new Error(data.error || 'Failed to create portal session');
             }

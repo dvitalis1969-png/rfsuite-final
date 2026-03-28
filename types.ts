@@ -380,6 +380,7 @@ export interface User {
     subscription?: string;
     subscriptionStatus?: string;
     stripeCustomerId?: string | null;
+    role?: string;
 }
 
 export interface PublicProfile {

@@ -17,31 +17,40 @@ const AppCard: React.FC<{
     borderClass: string;
     isLocked?: boolean;
 }> = ({ title, description, icon, onClick, colorClass, borderClass, isLocked }) => (
-    <button 
-        onClick={isLocked ? undefined : onClick}
-        className={`group relative overflow-hidden p-8 rounded-3xl border border-white/10 bg-slate-900/40 ${isLocked ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-900 hover:-translate-y-2 hover:shadow-[0_40px_100px_rgba(0,0,0,0.6)]'} transition-all duration-500 text-left w-full h-full flex flex-col`}
-    >
-        <div className={`absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 rounded-full blur-[80px] opacity-20 ${!isLocked && 'group-hover:opacity-40'} transition-opacity duration-700 ${colorClass}`}></div>
-        
-        <div className="flex justify-between items-start mb-6">
-            <div className={`p-4 w-fit rounded-2xl bg-slate-950 border ${borderClass} ${!isLocked && 'group-hover:scale-110'} transition-transform duration-500 ${colorClass.replace('bg-', 'text-')}`}>
-                {icon}
-            </div>
-            {isLocked && (
-                <div className="p-2 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20 flex items-center gap-2">
-                    <Lock size={14} />
-                    <span className="text-[9px] font-black uppercase tracking-widest">Pro Only</span>
+    <div className="relative group h-full">
+        <button 
+            onClick={isLocked ? undefined : onClick}
+            className={`relative overflow-hidden p-8 rounded-3xl border border-white/10 bg-slate-900/40 ${isLocked ? 'opacity-50 cursor-not-allowed' : 'group-hover:bg-slate-900 group-hover:-translate-y-2 group-hover:shadow-[0_40px_100px_rgba(0,0,0,0.6)]'} transition-all duration-500 text-left w-full h-full flex flex-col`}
+        >
+            <div className={`absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 rounded-full blur-[80px] opacity-20 ${!isLocked ? 'group-hover:opacity-40' : ''} transition-opacity duration-700 ${colorClass}`}></div>
+            
+            <div className="flex justify-between items-start mb-6">
+                <div className={`p-4 w-fit rounded-2xl bg-slate-950 border ${borderClass} ${!isLocked ? 'group-hover:scale-110' : ''} transition-transform duration-500 ${colorClass.replace('bg-', 'text-')}`}>
+                    {icon}
                 </div>
-            )}
-        </div>
-        
-        <h3 className={`text-xl font-black text-white mb-3 uppercase tracking-wider ${!isLocked && 'group-hover:text-indigo-400'} transition-colors`}>{title}</h3>
-        <p className={`text-sm text-slate-500 font-medium leading-relaxed ${!isLocked && 'group-hover:text-slate-300'} transition-colors`}>{description}</p>
-        
-        <div className={`mt-auto pt-8 flex items-center text-[10px] font-black uppercase tracking-[0.2em] text-slate-600 ${!isLocked && 'group-hover:text-indigo-400'} transition-colors`}>
-            {isLocked ? 'Upgrade to Access' : <>Initialize Module <span className="ml-2 text-lg leading-none transform group-hover:translate-x-2 transition-transform">&rarr;</span></>}
-        </div>
-    </button>
+                {isLocked && (
+                    <div className="p-2 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20 flex items-center gap-2">
+                        <Lock size={14} />
+                        <span className="text-[9px] font-black uppercase tracking-widest">Pro Only</span>
+                    </div>
+                )}
+            </div>
+            
+            <h3 className={`text-xl font-black text-white mb-3 uppercase tracking-wider ${!isLocked ? 'group-hover:text-indigo-400' : ''} transition-colors`}>{title}</h3>
+            <p className={`text-sm text-slate-500 font-medium leading-relaxed ${!isLocked ? 'group-hover:text-slate-300' : ''} transition-colors`}>{description}</p>
+            
+            <div className={`mt-auto pt-8 flex items-center text-[10px] font-black uppercase tracking-[0.2em] text-slate-600 ${!isLocked ? 'group-hover:text-indigo-400' : ''} transition-colors`}>
+                {isLocked ? 'Upgrade to Access' : <>Initialize Module <span className="ml-2 text-lg leading-none transform group-hover:translate-x-2 transition-transform">&rarr;</span></>}
+            </div>
+        </button>
+        {isLocked && (
+            <div className="absolute -top-14 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-50 w-64 bg-slate-800 text-slate-200 text-xs text-center p-3 rounded-xl border border-slate-700 shadow-2xl">
+                <span className="font-bold text-white block mb-1">Module Locked</span>
+                Upgrade to a Pro subscription to unlock this module and access advanced features.
+                <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-slate-800 border-b border-r border-slate-700 transform rotate-45"></div>
+            </div>
+        )}
+    </div>
 );
 
 const AppLauncher: React.FC<AppLauncherProps> = ({ onSelectApp, user }) => {
