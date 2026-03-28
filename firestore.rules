@@ -145,5 +145,23 @@ service cloud.firestore {
       );
       allow delete: if isAuthenticated() && (resource.data.authorId == request.auth.uid || isAdmin());
     }
+
+    // Contact Messages rules
+    match /contact_messages/{messageId} {
+      allow create: if isAuthenticated() && isValidContactMessage(request.resource.data);
+      allow read: if isAuthenticated() && (request.auth.uid == resource.data.userId || isAdmin());
+    }
+
+    function isValidContactMessage(data) {
+      // Debugging: check fields one by one
+      return data.keys().hasAll(['userId', 'userEmail', 'subject', 'message', 'createdAt', 'status']) &&
+             data.keys().hasOnly(['userId', 'userEmail', 'subject', 'message', 'createdAt', 'status']) &&
+             data.userId is string &&
+             (data.userEmail is string || data.userEmail == null) &&
+             data.subject is string && data.subject.size() > 0 && data.subject.size() < 200 &&
+             data.message is string && data.message.size() > 0 && data.message.size() < 5000 &&
+             data.status is string &&
+             data.createdAt is timestamp;
+    }
   }
 }

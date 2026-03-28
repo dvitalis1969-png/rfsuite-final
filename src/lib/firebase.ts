@@ -12,7 +12,7 @@ const config = {
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  firestoreDatabaseId: import.meta.env.VITE_FIREBASE_DATABASE_ID || '(default)'
+  firestoreDatabaseId: import.meta.env.VITE_FIREBASE_DATABASE_ID || 'ai-studio-d9e587e7-1bc6-4a86-ae1d-e24d504cd37f'
 };
 
 let app: any = null;
@@ -22,6 +22,7 @@ let storage: any = null;
 
 if (config.apiKey) {
   try {
+    console.log("Firebase Config:", config);
     app = initializeApp(config);
     auth = getAuth(app);
     db = getFirestore(app, (config as any).firestoreDatabaseId);

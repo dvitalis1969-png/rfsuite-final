@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
-import { User, CreditCard, Shield, LogOut, X, Check, Clock, Calendar, Zap, ExternalLink } from 'lucide-react';
+import { User, CreditCard, Shield, LogOut, X, Check, Clock, Calendar, Zap, ExternalLink, Mail } from 'lucide-react';
 import { db, auth } from '../src/lib/firebase';
 import { doc, setDoc } from 'firebase/firestore';
+import ContactForm from './ContactForm';
 
 interface AccountDashboardProps {
     user: any;
@@ -14,7 +15,7 @@ interface AccountDashboardProps {
 }
 
 const AccountDashboard: React.FC<AccountDashboardProps> = ({ user, onClose, onLogout, onUpgrade, onLoadProject, onRefreshUser }) => {
-    const [activeTab, setActiveTab] = useState<'profile' | 'billing' | 'security' | 'projects'>('profile');
+    const [activeTab, setActiveTab] = useState<'profile' | 'billing' | 'security' | 'projects' | 'contact'>('profile');
     const [isLoading, setIsLoading] = useState(false);
     const [lastError, setLastError] = useState<string | null>(null);
     const [configStatus, setConfigStatus] = useState<{ stripe: boolean; firebase: boolean }>({ stripe: false, firebase: false });
@@ -322,7 +323,8 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({ user, onClose, onLo
                             { id: 'profile', label: 'Profile', icon: <User className="w-4 h-4" /> },
                             { id: 'projects', label: 'My Projects', icon: <Zap className="w-4 h-4" /> },
                             { id: 'billing', label: 'Subscription', icon: <CreditCard className="w-4 h-4" /> },
-                            { id: 'security', label: 'Security', icon: <Shield className="w-4 h-4" /> }
+                            { id: 'security', label: 'Security', icon: <Shield className="w-4 h-4" /> },
+                            { id: 'contact', label: 'Contact', icon: <Mail className="w-4 h-4" /> }
                         ].map(tab => (
                             <button
                                 key={tab.id}
@@ -622,6 +624,13 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({ user, onClose, onLo
                                     <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-slate-400 group-hover:text-white transition-all">→</div>
                                 </button>
                             </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'contact' && (
+                        <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+                            <h3 className="text-2xl font-black text-white uppercase tracking-tight mb-8">Contact Support</h3>
+                            <ContactForm />
                         </div>
                     )}
                 </div>
