@@ -214,11 +214,11 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({ user, onClose, onLo
         }
     };
 
-    // Replace these with your actual Stripe Price IDs or set them in your environment variables
+    // Hardcoded Stripe Price IDs
     const tiers = [
-        { id: import.meta.env.VITE_STRIPE_PRICE_48H || 'price_1TFx8PL5JAY1lJg5iiPBdgWN', name: '48 Hour Pass', price: '£5.99', icon: <Clock className="w-5 h-5" />, desc: 'Single Event Access' },
-        { id: import.meta.env.VITE_STRIPE_PRICE_7D || 'price_1TFx8gL5JAY1lJg5po1s8JQ2', name: '7 Day Pass', price: '£12.99', icon: <Calendar className="w-5 h-5" />, desc: 'Festival Week Access' },
-        { id: import.meta.env.VITE_STRIPE_PRICE_1M || 'price_1TFx90L5JAY1lJg5fCz7HRne', name: '1 Month Pro', price: '£26.99', icon: <Zap className="w-5 h-5" />, desc: 'Continuous Professional Use' }
+        { id: 'price_1TFx8PL5JAY1lJg5iiPBdgWN', name: '48 Hour Pass', price: '£5.99', icon: <Clock className="w-5 h-5" />, desc: 'Single Event Access' },
+        { id: 'price_1TFx8gL5JAY1lJg5po1s8JQ2', name: '7 Day Pass', price: '£12.99', icon: <Calendar className="w-5 h-5" />, desc: 'Festival Week Access' },
+        { id: 'price_1TFx90L5JAY1lJg5fCz7HRne', name: '1 Month Pro', price: '£26.99', icon: <Zap className="w-5 h-5" />, desc: 'Continuous Professional Use' }
     ];
 
     // Use relative path for API calls - this works on both localhost and Render automatically
