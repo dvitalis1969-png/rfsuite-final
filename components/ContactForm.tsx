@@ -54,24 +54,44 @@ const ContactForm: React.FC = () => {
                 })
             });
             
-            if (!emailResponse.ok) throw new Error('Failed to send email');
+            if (!emailResponse.ok) {
+                const errorData = await emailResponse.json();
+                throw new Error(errorData.error || 'Failed to send email');
+            }
 
             // 2. Write to Firestore
-            await addDoc(collection(db, 'contact_messages'), {
-                userId: auth.currentUser.uid,
-                userEmail: auth.currentUser.email,
-                subject,
-                message,
-                createdAt: serverTimestamp(),
-                status: 'new'
-            });
+            try {
+                console.log("📝 Attempting to write to Firestore:", {
+                    collection: 'contact_messages',
+                    data: {
+                        userId: auth.currentUser.uid,
+                        userEmail: auth.currentUser.email,
+                        subject,
+                        message,
+                        createdAt: serverTimestamp(),
+                        status: 'new'
+                    }
+                });
+                await addDoc(collection(db, 'contact_messages'), {
+                    userId: auth.currentUser.uid,
+                    userEmail: auth.currentUser.email,
+                    subject,
+                    message,
+                    createdAt: serverTimestamp(),
+                    status: 'new'
+                });
+                console.log("✅ Firestore write successful");
+            } catch (error) {
+                console.error("❌ Firestore write failed:", error);
+                handleFirestoreError(error, OperationType.WRITE, 'contact_messages');
+            }
             
             toast.success('Message sent successfully!');
             setSubject('');
             setMessage('');
         } catch (error: any) {
             console.error('Error sending message:', error);
-            toast.error('Failed to send message.');
+            toast.error(error.message || 'Failed to send message.');
         } finally {
             setIsSubmitting(false);
         }

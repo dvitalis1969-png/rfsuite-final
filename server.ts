@@ -276,11 +276,14 @@ async function startServer() {
   });
 
   app.post("/api/send-email", async (req, res) => {
+    let host = "unknown";
     try {
+      console.log("📧 Received email request:", req.body);
       const { subject, message, userEmail } = req.body;
       
       let emailUser = process.env.EMAIL_USER;
       let emailPass = process.env.EMAIL_PASS;
+      console.log(`📧 Checking credentials: EMAIL_USER=${emailUser ? 'PRESENT' : 'MISSING'}, EMAIL_PASS=${emailPass ? 'PRESENT' : 'MISSING'}`);
       let emailConfig: any = {};
 
       // Fallback to local file if env vars are missing
@@ -299,30 +302,80 @@ async function startServer() {
       }
 
       if (!emailUser || !emailPass) {
-        throw new Error("Email credentials (EMAIL_USER/EMAIL_PASS) not found in environment or local file.");
+        console.error("❌ Email credentials missing");
+        return res.status(400).json({ error: "Email service is not configured. Please set EMAIL_USER and EMAIL_PASS in settings." });
       }
 
+      // Auto-detect SMTP settings based on domain if not explicitly provided
+      host = emailConfig.host;
+      let port = emailConfig.port;
+      let secure = emailConfig.secure;
+
+      if (!host) {
+        if (emailUser.includes('@outlook.com') || emailUser.includes('@hotmail.com') || emailUser.includes('@live.com')) {
+          host = 'smtp.office365.com';
+          port = 587;
+          secure = false; // Office365 uses STARTTLS on 587
+        } else {
+          host = 'smtp.gmail.com';
+          port = 465;
+          secure = true;
+        }
+      }
+
+      console.log(`📧 Using SMTP host: ${host}, port: ${port}, secure: ${secure}, user: ${emailUser.substring(0, 3)}...`);
+
       const transporter = nodemailer.createTransport({
-        host: emailConfig.host || 'smtp.gmail.com',
-        port: emailConfig.port || 465,
-        secure: emailConfig.secure !== false,
+        host: host,
+        port: port,
+        secure: secure,
         auth: {
           user: emailUser,
           pass: emailPass,
         },
+        tls: {
+          // This helps with some Office365/Outlook certificate issues
+          ciphers: 'SSLv3',
+          rejectUnauthorized: false
+        },
+        // Add timeout to prevent hanging
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 10000,
       });
+
+      const supportEmail = process.env.SUPPORT_EMAIL || emailUser;
+      console.log(`📧 Sending support email to: ${supportEmail ? supportEmail.substring(0, 3) + '...' : 'MISSING'}`);
 
       await transporter.sendMail({
         from: emailUser,
-        to: process.env.SUPPORT_EMAIL || emailUser,
+        to: supportEmail,
+        replyTo: userEmail,
         subject: `New Contact Support Message: ${subject}`,
         text: `From: ${userEmail}\n\nMessage:\n${message}`,
       });
 
+      console.log("✅ Email sent successfully");
       res.json({ success: true });
-    } catch (err) {
-      console.error("Email error:", err);
-      res.status(500).json({ error: "Failed to send email" });
+    } catch (err: any) {
+      console.error("❌ Email error:", err);
+      
+      let errorMessage = `Failed to send email via ${host}`;
+      if (err.message && err.message.includes("535")) {
+        if (host.includes('gmail')) {
+          errorMessage = "Gmail authentication failed. Please ensure you are using a 16-character 'App Password' instead of your regular password. You can generate one in your Google Account settings.";
+        } else if (host.includes('office365') || host.includes('outlook')) {
+          errorMessage = "Outlook/Office365 authentication failed. Please check your email and password. If you have 2-Step Verification enabled, you may need an 'App Password' from your Microsoft account settings.";
+        } else {
+          errorMessage = `Authentication failed for ${host}. Please verify your EMAIL_USER and EMAIL_PASS.`;
+        }
+      } else if (err.message && (err.message.includes("ETIMEDOUT") || err.message.includes("ECONNREFUSED"))) {
+        errorMessage = `Connection to email server (${host}) failed. This might be a network issue or incorrect SMTP settings.`;
+      } else if (err.message) {
+        errorMessage = `Email Error (${host}): ${err.message}`;
+      }
+      
+      res.status(500).json({ error: errorMessage });
     }
   });
 

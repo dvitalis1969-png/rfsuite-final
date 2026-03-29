@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
@@ -15,14 +15,23 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
-const firestoreDatabaseId = import.meta.env.VITE_FIRESTORE_DATABASE_ID || '(default)';
+let firestoreDatabaseId = import.meta.env.VITE_FIRESTORE_DATABASE_ID || '(default)';
+if (firestoreDatabaseId === 'default') {
+  firestoreDatabaseId = '(default)';
+}
 
 // Initialize Firebase SDK
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+const googleProvider = new GoogleAuthProvider();
 const db = getFirestore(app, firestoreDatabaseId);
 const storage = getStorage(app);
 
-console.log("✅ Firebase successfully initialized with project:", firebaseConfig.projectId);
+console.log("✅ Firebase initialized with config:", {
+  ...firebaseConfig,
+  apiKey: firebaseConfig.apiKey ? "********" : "MISSING",
+  projectId: firebaseConfig.projectId || "MISSING"
+});
+console.log("✅ Firestore DB ID:", firestoreDatabaseId);
 
-export { auth, db, storage };
+export { auth, db, storage, googleProvider };
