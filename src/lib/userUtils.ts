@@ -1,4 +1,4 @@
-import { User } from '../types';
+import { User } from '../../types';
 
 export const isPro = (user: User | null | undefined): boolean => {
     if (!user) return false;

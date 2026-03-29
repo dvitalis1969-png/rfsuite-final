@@ -36,8 +36,12 @@ service cloud.firestore {
     function isAdmin() {
       return isAuthenticated() && (
         request.auth.token.email in ["dvitalis1969@gmail.com", "dnomsed@live.co.uk"] ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+        request.auth.token.email_verified == true && (
+          // Use a different collection for roles to avoid recursion if needed, 
+          // or just rely on the email list for now.
+          // For now, let's just use the email list to be safe and avoid recursion.
+          false 
+        )
       );
     }
 

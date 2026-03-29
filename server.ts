@@ -28,7 +28,9 @@ function getStripe(): Stripe {
   if (!stripeClient) {
     let key = process.env.STRIPE_SECRET_KEY;
     
-    if (!key) {
+    if (key) {
+      console.log("✅ Stripe initialized from environment variable (starts with: " + key.substring(0, 7) + "...)");
+    } else {
       // Try to load from local stripe-config.json if it exists
       const stripePath = path.join(process.cwd(), 'stripe-config.json');
       if (fs.existsSync(stripePath)) {
@@ -398,10 +400,29 @@ async function startServer() {
       }
 
       // Fetch the price to determine if it's recurring or one-time
-      console.log("[Checkout] Retrieving price details for:", priceId);
-      const price = await stripe.prices.retrieve(priceId);
+      const stripeKey = process.env.STRIPE_SECRET_KEY || '';
+      const isTestKey = stripeKey.startsWith('sk_test_');
+      console.log(`[Checkout] 🔍 Retrieving price details for: ${priceId}`);
+      console.log(`[Checkout] 🔑 Using Stripe ${isTestKey ? 'TEST' : 'LIVE'} Key (starts with: ${stripeKey.substring(0, 7)}...)`);
+      
+      let price;
+      try {
+        price = await stripe.prices.retrieve(priceId);
+      } catch (priceErr: any) {
+        if (priceErr.code === 'resource_missing') {
+          const msg = `[Checkout] ❌ Price ID ${priceId} NOT FOUND. You are using a ${isTestKey ? 'TEST' : 'LIVE'} key. Please ensure this Price ID exists in your Stripe ${isTestKey ? 'Test' : 'Live'} dashboard.`;
+          console.error(msg);
+          return res.status(404).json({ 
+            error: "Price not found", 
+            message: msg,
+            mode: isTestKey ? 'test' : 'live'
+          });
+        }
+        throw priceErr;
+      }
+
       const mode = price.type === 'recurring' ? 'subscription' : 'payment';
-      console.log("[Checkout] Price mode determined:", mode);
+      console.log(`[Checkout] ✅ Price found! Mode: ${mode}, Currency: ${price.currency}`);
       
       const session = await stripe.checkout.sessions.create({
         mode: mode,

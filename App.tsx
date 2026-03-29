@@ -580,7 +580,6 @@ const App: React.FC = () => {
         try {
             let finalProject = { ...newProject } as Project;
             if (isAuthenticated && user?.id) {
-                const { saveProjectToCloud } = await import('./services/cloudDbService');
                 const cloudId = await saveProjectToCloud(user.id, newProject);
                 finalProject.id = cloudId as any;
             }
@@ -615,7 +614,6 @@ const App: React.FC = () => {
         };
         try {
             if (isAuthenticated && user?.id) {
-                const { saveProjectToCloud } = await import('./services/cloudDbService');
                 const cloudId = await saveProjectToCloud(user.id, updatedProject);
                 // We keep the local ID for IndexedDB but update the project object with cloud info if needed
                 // For simplicity, we just save to both

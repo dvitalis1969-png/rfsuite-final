@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { db, auth, storage } from '../src/lib/firebase';
-import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, setDoc, deleteDoc, where } from 'firebase/firestore';
+import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, setDoc, deleteDoc, where, getDoc } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { isPro } from '../src/lib/userUtils';
 import { getUserColor, formatTimestamp } from '../src/utils/chatUtils';
@@ -532,7 +532,6 @@ const ChatWidget: React.FC<{ projectId?: string | number; unreadDMs?: Record<str
     setIsLoadingProfile(true);
     setSelectedPublicProfile(null);
     try {
-      const { getDoc } = await import('firebase/firestore');
       const profileDoc = await getDoc(doc(db, 'public_profiles', user.id));
       if (profileDoc.exists()) {
         setSelectedPublicProfile(profileDoc.data());

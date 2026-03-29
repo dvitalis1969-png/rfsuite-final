@@ -2,7 +2,10 @@ import React, { useState } from 'react';
 import { toast } from 'sonner';
 import { User, CreditCard, Shield, LogOut, X, Check, Clock, Calendar, Zap, ExternalLink, Mail } from 'lucide-react';
 import { db, auth } from '../src/lib/firebase';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, onSnapshot } from 'firebase/firestore';
+import { updateProfile, sendPasswordResetEmail } from 'firebase/auth';
+import { handleFirestoreError, OperationType } from '../src/utils/firestoreErrorHandler';
+import { getUserProjectsFromCloud, deleteProjectFromCloud } from '../services/cloudDbService';
 import ContactForm from './ContactForm';
 
 interface AccountDashboardProps {
@@ -51,14 +54,9 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({ user, onClose, onLo
         console.log("Updating profile for user:", auth.currentUser.uid);
         try {
             setIsUpdatingName(true);
-            const { updateProfile } = await import('firebase/auth');
-            const { auth: firebaseAuth } = await import('../src/lib/firebase');
-            await updateProfile(firebaseAuth.currentUser!, { displayName: displayName });
+            await updateProfile(auth.currentUser!, { displayName: displayName });
             
             // Update user document in Firestore too
-            const { doc, setDoc } = await import('firebase/firestore');
-            const { db } = await import('../src/lib/firebase');
-            
             const profileData = {
                 name: displayName,
                 title: title.trim(),
@@ -98,7 +96,6 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({ user, onClose, onLo
     const fetchLatestUser = async () => {
         if (!user?.id) return;
         try {
-            const { doc, getDoc } = await import('firebase/firestore');
             const userDoc = await getDoc(doc(db, 'users', user.id));
             if (userDoc.exists()) {
                 const data = userDoc.data();
@@ -126,8 +123,8 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({ user, onClose, onLo
 
         let unsubscribe: () => void;
         
-        const setupListener = async () => {
-            const { doc, onSnapshot } = await import('firebase/firestore');
+        const setupListener = () => {
+            const path = `users/${user.id}`;
             unsubscribe = onSnapshot(doc(db, 'users', user.id), (docSnapshot) => {
                 if (docSnapshot.exists()) {
                     const data = docSnapshot.data();
@@ -149,6 +146,7 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({ user, onClose, onLo
                 }
             }, (error) => {
                 console.error("Error listening to user data:", error);
+                handleFirestoreError(error, OperationType.GET, path);
             });
         };
 
@@ -184,7 +182,6 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({ user, onClose, onLo
         if (!user?.id) return;
         setIsFetchingProjects(true);
         try {
-            const { getUserProjectsFromCloud } = await import('../services/cloudDbService');
             const projects = await getUserProjectsFromCloud(user.id);
             setCloudProjects(projects);
         } catch (err) {
@@ -198,7 +195,6 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({ user, onClose, onLo
         e.stopPropagation();
         if (!window.confirm('Are you sure you want to delete this project?')) return;
         try {
-            const { deleteProjectFromCloud } = await import('../services/cloudDbService');
             await deleteProjectFromCloud(id);
             setCloudProjects(prev => prev.filter(p => p.id !== id));
         } catch (err) {
@@ -230,6 +226,7 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({ user, onClose, onLo
         try {
             setIsLoading(true);
             setLastError(null);
+            toast.info("Connecting to Stripe...", { description: `Price ID: ${priceId}` });
             console.log(`[v${APP_VERSION}] Initiating checkout to: ${targetUrl}`);
             
             const response = await fetch(targetUrl, {
@@ -338,8 +335,6 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({ user, onClose, onLo
         if (!currentUser?.email) return;
         try {
             setIsLoading(true);
-            const { auth } = await import('../src/lib/firebase');
-            const { sendPasswordResetEmail } = await import('firebase/auth');
             await sendPasswordResetEmail(auth, currentUser.email);
             toast.success(`A password reset email has been sent to ${currentUser.email}. Please check your inbox.`);
         } catch (error: any) {
