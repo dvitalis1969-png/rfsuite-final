@@ -21,7 +21,7 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({ user, onClose, onLo
     const [activeTab, setActiveTab] = useState<'profile' | 'billing' | 'security' | 'projects' | 'contact'>('profile');
     const [isLoading, setIsLoading] = useState(false);
     const [lastError, setLastError] = useState<string | null>(null);
-    const [configStatus, setConfigStatus] = useState<{ stripe: boolean; firebase: boolean }>({ stripe: false, firebase: false });
+    const [configStatus, setConfigStatus] = useState<{ stripe: boolean; firebase: boolean; stripeMode?: string; stripePrefix?: string }>({ stripe: false, firebase: false });
     const [cloudProjects, setCloudProjects] = useState<any[]>([]);
     const [isFetchingProjects, setIsFetchingProjects] = useState(false);
     const [currentUser, setCurrentUser] = useState(user);
@@ -163,9 +163,15 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({ user, onClose, onLo
             try {
                 const response = await fetch(`${API_BASE}/api/health`);
                 const data = await response.json();
+                
+                const stripeResponse = await fetch(`${API_BASE}/api/stripe-status`);
+                const stripeData = await stripeResponse.json();
+                
                 setConfigStatus({ 
-                    stripe: data.config?.stripeSecret && data.config?.stripePublishable, 
-                    firebase: data.config?.firebaseAdmin 
+                    stripe: stripeData.configured, 
+                    firebase: data.config?.firebaseAdmin,
+                    stripeMode: stripeData.mode,
+                    stripePrefix: stripeData.prefix
                 });
             } catch (err) {
                 console.error("Config check failed:", err);
@@ -255,7 +261,7 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({ user, onClose, onLo
                 }
                 setIsLoading(false);
             } else {
-                const errorMsg = data.error || 'Failed to create checkout session';
+                const errorMsg = data.message || data.error || 'Failed to create checkout session';
                 setLastError(errorMsg);
                 throw new Error(errorMsg);
             }
@@ -498,8 +504,13 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({ user, onClose, onLo
                                             <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">System Status</p>
                                             <div className="flex gap-2 mt-1">
                                                 <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-tighter ${configStatus.stripe ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
-                                                    Stripe: {configStatus.stripe ? 'Ready' : 'Not Set'}
+                                                    Stripe: {configStatus.stripe ? `Ready (${configStatus.stripeMode})` : 'Not Set'}
                                                 </span>
+                                                {configStatus.stripe && (
+                                                    <span className="px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400 text-[8px] font-black uppercase tracking-tighter">
+                                                        Key: {configStatus.stripePrefix}
+                                                    </span>
+                                                )}
                                                 <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-tighter ${configStatus.firebase ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
                                                     Firebase: {configStatus.firebase ? 'Ready' : 'Not Set'}
                                                 </span>

@@ -140,6 +140,15 @@ async function startServer() {
     });
   });
 
+  app.get("/api/stripe-status", (req, res) => {
+    const key = process.env.STRIPE_SECRET_KEY || '';
+    res.json({
+      configured: !!key,
+      mode: key.startsWith('sk_test_') ? 'test' : 'live',
+      prefix: key.substring(0, 7) + '...'
+    });
+  });
+
   // Enable CORS for all routes
   app.use((req, res, next) => {
     res.header("Access-Control-Allow-Origin", "*");
