@@ -136,7 +136,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
 
                         {/* Desktop Nav */}
                         <div className="hidden lg:flex items-center gap-8">
-                            {['Information', 'Capabilities', 'About', 'Learning', 'Pricing', 'FAQs', 'Contact'].map((item) => (
+                            {['Information', 'Capabilities', 'About', 'Pricing', 'FAQs', 'Contact'].map((item) => (
                                 <a 
                                     key={item}
                                     href={`#${item.toLowerCase().replace(' ', '')}`} 
@@ -174,7 +174,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
                             className="fixed inset-0 z-40 bg-slate-950 pt-24 px-6 lg:hidden"
                         >
                             <div className="flex flex-col gap-8 items-center">
-                                {['Information', 'Capabilities', 'About', 'Learning', 'Pricing', 'FAQs', 'Contact'].map((item) => (
+                                {['Information', 'Capabilities', 'About', 'Pricing', 'FAQs', 'Contact'].map((item) => (
                                     <a 
                                         key={item}
                                         href={`#${item.toLowerCase().replace(' ', '')}`} 
@@ -243,7 +243,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
                 {/* Information Section */}
                 <section id="information" className="container mx-auto px-6 py-16 border-t border-white/5">
                     <div className="flex flex-col lg:flex-row gap-20 items-center">
-                        <div className="lg:w-1/2">
+                        <div className="w-full lg:w-1/2">
                             <h2 className="text-4xl font-black text-white uppercase tracking-tighter mb-8 leading-none">
                                 Field-Proven <br />
                                 <span className="text-indigo-500">Coordination</span>
@@ -258,8 +258,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
                                 {[
                                     { icon: Cpu, title: "Advanced IMD Engine", desc: "Proprietary combinatorial analysis for 3rd, 5th, and 7th order products with user-definable safety margins." },
                                     { icon: Zap, title: "Dynamic Re-Sync", desc: "Instantaneous re-coordination when the environment shifts. Add guest gear without breaking your primary show." },
-                                    { icon: Activity, title: "Hardware Integration", desc: "Direct Web Serial link to TinySA and other hardware for real-time noise floor monitoring and site scanning." },
-                                    { icon: Globe, title: "Zonal Intelligence", desc: "Intelligent frequency reuse across multi-stage sites, calculating distance-based attenuation and path loss." }
+                                    { icon: Globe, title: "Site Map Integration", desc: "Interactive festival site mapping with smart stage distance calculations and coordinate-based attenuation." },
+                                    { icon: Layout, title: "Running Order Converter", desc: "Intelligent Running Order Converter that directly integrates into the coordination engine for seamless scheduling." },
+                                    { icon: Activity, title: "Spectral View", desc: "Advanced Spectral View that isolates house systems, acts, and constant TX frequencies for clear visualization." },
+                                    { icon: Radio, title: "Hardware Integration", desc: "Direct Web Serial link to TinySA and other hardware for real-time noise floor monitoring and site scanning." }
                                 ].map((item, i) => (
                                     <div key={i} className="flex gap-4">
                                         <div className="text-indigo-500 mt-1 shrink-0"><item.icon size={20} /></div>
@@ -271,7 +273,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
                                 ))}
                             </div>
                         </div>
-                        <div className="lg:w-1/2 relative">
+                        <div className="w-full lg:w-1/2 relative">
                             <div className="aspect-video rounded-3xl bg-slate-900 border border-white/10 overflow-hidden shadow-2xl group relative">
                                 {/* Mockup composite instead of img */}
                                 <div className="absolute inset-0 bg-slate-950 overflow-hidden group">
@@ -393,7 +395,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
                                         <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
                                         <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Live Analysis Active</span>
                                     </div>
-                                    <h3 className="text-xl font-black text-white uppercase tracking-wider">High-Fidelity Visualization</h3>
+                                    <h3 className="text-xl font-black text-white uppercase tracking-wider">Spectrum Visualization</h3>
                                     <p className="text-slate-400 text-xs mt-2 uppercase tracking-widest">Live 2D spectral analysis</p>
                                 </div>
                             </div>
@@ -404,12 +406,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
                 {/* Why RF Suite Section */}
                 <section className="container mx-auto px-6 py-16 border-t border-white/5">
                     <div className="text-center max-w-3xl mx-auto mb-20">
-                        <h2 className="text-4xl font-black text-white uppercase tracking-tighter mb-6">Why Professionals Choose Us</h2>
+                        <h2 className="text-4xl font-black text-white uppercase tracking-tighter mb-6">Why Choose Us?</h2>
                         <p className="text-slate-400 leading-relaxed">In the world of high-stakes RF, "good enough" is a recipe for disaster. We provide the tools to move from guesswork to mathematical certainty.</p>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
                         {[
-                            { title: "Zero Latency", desc: "Our engine is optimized for speed, allowing for instant updates during live show environments." },
+                            { title: "Efficiency", desc: "Our engine is optimized for speed, allowing for instant updates during live show environments." },
                             { title: "Cloud Sync", desc: "Access your project data from any device. Your show files are always backed up and ready." },
                             { title: "Equipment DB", desc: "Comprehensive database of professional wireless systems from Shure, Sennheiser, Wisycom, and more." },
                             { title: "Open Standards", desc: "Export to CSV, PDF, or native formats. We don't lock your data into a proprietary silo." }
@@ -457,8 +459,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
                                 <li>
                                     <h4 className="text-sm font-black text-indigo-400 uppercase tracking-widest mb-2">TV Channel Lookup</h4>
                                     <p className="text-xs text-slate-500 leading-relaxed">
-                                        <span className="text-slate-300 font-bold block mb-1">Global White-Space Integration</span>
-                                        Automatic exclusion of active DTV broadcast channels based on your GPS location. Access a global database to ensure your coordination stays clear of high-power local interference.
+                                        <span className="text-slate-300 font-bold block mb-1">White-Space Integration</span>
+                                        Automatic exclusion of active DTV broadcast channels based on your GPS location to ensure your coordination stays clear of high-power TV Transmitters.
                                     </p>
                                 </li>
                             </ul>
@@ -519,7 +521,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
                                     <h4 className="text-sm font-black text-amber-400 uppercase tracking-widest mb-2">Hardware Parameters</h4>
                                     <p className="text-xs text-slate-500 leading-relaxed">
                                         <span className="text-slate-300 font-bold block mb-1">Global Device Database</span>
-                                        Access a comprehensive library of hardware specifications. From Shure and Sennheiser to Wisycom and Lectrosonics, all tuning ranges and filter profiles are pre-loaded.
+                                        Access a comprehensive library of hardware specifications. From Shure and Sennheiser to Wisycom and Lectrosonics, multiple tuning ranges pre-loaded.
                                     </p>
                                 </li>
                             </ul>
@@ -553,7 +555,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
                                     <h4 className="text-sm font-black text-cyan-400 uppercase tracking-widest mb-2">WMAS Coordination</h4>
                                     <p className="text-xs text-slate-500 leading-relaxed">
                                         <span className="text-slate-300 font-bold block mb-1">Next-Gen Efficiency</span>
-                                        Advanced support for Wireless Multi-channel Audio Systems. Leverage wideband spectral efficiency to pack more channels into less space with zero IMD.
+                                        Advanced support for Wireless Multi-channel Audio Systems. Leverage wideband spectral efficiency to pack more channels into less space with zero IMD. Include WMAS device channels as global exclusion zones 
                                     </p>
                                 </li>
                             </ul>
@@ -566,30 +568,30 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
                                 <div className="flex gap-4">
                                     <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5 shrink-0"></div>
                                     <div>
-                                        <h5 className="text-sm font-black text-slate-200 uppercase tracking-widest mb-1">Proximity Simulator (IEM Study)</h5>
+                                        <h5 className="text-sm font-black text-slate-200 uppercase tracking-widest mb-1">Proximity Simulator</h5>
                                         <p className="text-xs text-slate-500 leading-relaxed">
                                             <span className="text-slate-400 italic block mb-1">"How close is too close?"</span>
-                                            Analyze how high-power IEM transmitters impact nearby receivers. Simulate desensitization and find safe physical spacing to prevent receiver front-end overload.
+                                            Analyze how talkback base station transmitters create intermodulation products. Simulate desensitization and find safe physical spacing to prevent receiver front-end overload.
                                         </p>
                                     </div>
                                 </div>
                                 <div className="flex gap-4">
                                     <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5 shrink-0"></div>
                                     <div>
-                                        <h5 className="text-sm font-black text-slate-200 uppercase tracking-widest mb-1">Co-Channel Lab (Interference)</h5>
+                                        <h5 className="text-sm font-black text-slate-200 uppercase tracking-widest mb-1">Co-Channel and Frequency Overlap Simulation</h5>
                                         <p className="text-xs text-slate-500 leading-relaxed">
                                             <span className="text-slate-400 italic block mb-1">"Capture Ratio Analysis"</span>
-                                            Educational signal collision simulator. Understand capture ratios and what happens when two signals share a frequency. Predict the "winner" in a spectral conflict.
+                                            Educational signal collision simulator. Understand capture ratios and what happens when two signals share a frequency. Derive reusable distances in a spectral conflict.
                                         </p>
                                     </div>
                                 </div>
                                 <div className="flex gap-4">
                                     <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5 shrink-0"></div>
                                     <div>
-                                        <h5 className="text-sm font-black text-slate-200 uppercase tracking-widest mb-1">IMD Physics Lab (Demo)</h5>
+                                        <h5 className="text-sm font-black text-slate-200 uppercase tracking-widest mb-1">IMD Physics Lab</h5>
                                         <p className="text-xs text-slate-500 leading-relaxed">
                                             <span className="text-slate-400 italic block mb-1">"Visualizing Intermodulation"</span>
-                                            The math of intermodulation made visual. See exactly where 3rd and 5th order products land in the spectrum and how they interact with your primary carriers.
+                                            The mathematics of intermodulation made visual. See exactly where 3rd and 5th order products land in the spectrum and how they interact with your primary carriers.
                                         </p>
                                     </div>
                                 </div>
@@ -616,20 +618,20 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
                                 <div className="flex gap-4">
                                     <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5 shrink-0"></div>
                                     <div>
-                                        <h5 className="text-sm font-black text-slate-200 uppercase tracking-widest mb-1">Cable Loss & VSWR</h5>
+                                        <h5 className="text-sm font-black text-slate-200 uppercase tracking-widest mb-1">Cable Loss</h5>
                                         <p className="text-xs text-slate-500 leading-relaxed">
                                             <span className="text-slate-400 italic block mb-1">"Transmission Line Health"</span>
-                                            Analyze signal degradation across various coaxial types and calculate Voltage Standing Wave Ratio (VSWR) to assess antenna and cable health.
+                                            Analyze signal degradation across various coaxial types.
                                         </p>
                                     </div>
                                 </div>
                                 <div className="flex gap-4">
                                     <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5 shrink-0"></div>
                                     <div>
-                                        <h5 className="text-sm font-black text-slate-200 uppercase tracking-widest mb-1">LOS & Fresnel Zone</h5>
+                                        <h5 className="text-sm font-black text-slate-200 uppercase tracking-widest mb-1">Frequency Forensics</h5>
                                         <p className="text-xs text-slate-500 leading-relaxed">
-                                            <span className="text-slate-400 italic block mb-1">"Obstacle Clearance"</span>
-                                            Earth curvature and obstacle clearance calculations for long-range point-to-point RF links. Ensure your 1st Fresnel zone is 60% clear.
+                                            <span className="text-slate-400 italic block mb-1">"Reverse Engineering Coordination"</span>
+                                            Paste any frequency set to uncover original coordination parameters. Detect channel spacing, IMD safety margins, and identify original equipment profiles or potential conflicts.
                                         </p>
                                     </div>
                                 </div>
@@ -643,16 +645,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
                                         </p>
                                     </div>
                                 </div>
-                                <div className="flex gap-4">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5 shrink-0"></div>
-                                    <div>
-                                        <h5 className="text-sm font-black text-slate-200 uppercase tracking-widest mb-1">Power Converter</h5>
-                                        <p className="text-xs text-slate-500 leading-relaxed">
-                                            <span className="text-slate-400 italic block mb-1">"Instant Unit Translation"</span>
-                                            Instant conversion between dBm, mW, Volts, and other critical RF units. Essential for fast field calculations and equipment spec comparisons.
-                                        </p>
-                                    </div>
-                                </div>
                             </div>
                         </EcosystemAccordion>
                     </div>
@@ -663,7 +655,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
                     <div className="container mx-auto px-6">
                         <div className="max-w-5xl mx-auto">
                             <div className="flex flex-col lg:flex-row gap-20 items-start">
-                                <div className="lg:w-1/3 sticky top-32">
+                                <div className="w-full lg:w-1/3 sticky top-32">
                                     <div className="relative">
                                         <div className="absolute -inset-4 bg-indigo-500/20 blur-2xl rounded-full"></div>
                                         <div className="relative aspect-square rounded-3xl bg-slate-900 border border-white/10 flex items-center justify-center overflow-hidden group">
@@ -766,7 +758,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
                                     </div>
                                 </div>
                                 
-                                <div className="lg:w-2/3">
+                                <div className="w-full lg:w-2/3">
                                     <h2 className="text-4xl md:text-6xl font-black text-white uppercase tracking-tighter mb-12 leading-[0.9]">
                                         The Story Behind <br />
                                         <span className="text-indigo-500">RF Suite</span>
@@ -807,56 +799,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
                                         <div className="p-8 rounded-3xl bg-indigo-600/5 border border-indigo-500/20">
                                             <h4 className="text-xs font-black text-indigo-400 uppercase tracking-widest mb-4">The Field Philosophy</h4>
                                             <p className="text-slate-400 text-sm leading-relaxed italic">
-                                                "We believe that every frequency has a story, and every show deserves a clean spectrum. Our philosophy is simple: prepare for the worst, coordinate for the best, and never let the math fail you when the lights go up."
+                                                "We believe that every frequency has a story, and every show deserves a clean spectrum. Our philosophy is simple: prepare for the worst, coordinate for the best, and never let the mathematics fail you when the lights go up."
                                             </p>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </section>
-
-                {/* Learning Section */}
-                <section id="learning" className="container mx-auto px-6 py-16">
-                    <div className="text-center mb-20">
-                        <h2 className="text-4xl font-black text-white uppercase tracking-tighter mb-4">Learning Center</h2>
-                        <p className="text-slate-500 uppercase font-black text-[10px] tracking-[0.3em]">Democratizing RF knowledge for everyone</p>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        <div className="p-10 rounded-3xl bg-slate-900/50 border border-white/5 hover:border-indigo-500/30 transition-all group">
-                            <div className="text-indigo-400 mb-8 group-hover:scale-110 transition-transform"><Info size={40} /></div>
-                            <h3 className="text-lg font-black text-white uppercase tracking-wider mb-4">RF Fundamentals</h3>
-                            <p className="text-slate-400 text-sm leading-relaxed mb-8">
-                                Master the "Why" behind coordination. This module covers the physics of radio waves, including wavelength, propagation, the inverse square law, and how different materials impact your signal.
-                            </p>
-                            <div className="pt-6 border-t border-white/5">
-                                <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">Curriculum: Physics & Propagation</span>
-                            </div>
-                        </div>
-                        <div className="p-10 rounded-3xl bg-slate-900/50 border border-white/5 hover:border-indigo-500/30 transition-all group">
-                            <div className="text-indigo-400 mb-8 group-hover:scale-110 transition-transform"><Zap size={40} /></div>
-                            <h3 className="text-lg font-black text-white uppercase tracking-wider mb-4">Pro Masterclass</h3>
-                            <p className="text-slate-400 text-sm leading-relaxed mb-8">
-                                Deep dive into advanced coordination. Learn combinatorial intermodulation analysis, spatial reuse strategies, and how to manage large-scale multi-zone sites with hundreds of active channels.
-                            </p>
-                            <div className="pt-6 border-t border-white/5">
-                                <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">Curriculum: Advanced IMD Logic</span>
-                            </div>
-                        </div>
-                        <div className="p-10 rounded-3xl bg-slate-900/50 border border-white/5 hover:border-indigo-500/30 transition-all group">
-                            <div className="text-indigo-400 mb-8 group-hover:scale-110 transition-transform"><HelpCircle size={40} /></div>
-                            <h3 className="text-lg font-black text-white uppercase tracking-wider mb-4">The RF Playbook</h3>
-                            <p className="text-slate-400 text-sm leading-relaxed mb-8">
-                                Real-world troubleshooting. We analyze actual show failures and successes, distilling 25 years of field experience into actionable strategies for when things go wrong on site.
-                            </p>
-                            <div className="pt-6 border-t border-white/5">
-                                <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">Curriculum: Field Troubleshooting</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="mt-20">
-                        <NewsFeed />
                     </div>
                 </section>
 
@@ -959,6 +908,40 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
                                 question="Can I export my frequencies?" 
                                 answer="Absolutely. You can export your coordination as a PDF frequency sheet, a CSV for import into other tools, or a native .rfproject file for backup." 
                             />
+                        </div>
+                    </div>
+                </section>
+
+                {/* Contact Section */}
+                <section id="contact" className="container mx-auto px-6 py-16 border-t border-white/5">
+                    <div className="max-w-4xl mx-auto text-center">
+                        <div className="mb-16">
+                            <h2 className="text-4xl font-black text-white uppercase tracking-tighter mb-4">Contact Us</h2>
+                            <p className="text-slate-500 uppercase font-black text-[10px] tracking-[0.3em]">Direct support for your spectral needs</p>
+                        </div>
+                        
+                        <div className="p-12 rounded-[40px] bg-slate-900/50 border border-white/5 relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 p-12 opacity-5 group-hover:opacity-10 transition-opacity">
+                                <Mail size={160} className="text-indigo-500" />
+                            </div>
+                            
+                            <div className="relative z-10 flex flex-col items-center">
+                                <div className="w-20 h-20 rounded-3xl bg-indigo-600/10 flex items-center justify-center text-indigo-400 mb-8 border border-indigo-500/20">
+                                    <Mail size={32} />
+                                </div>
+                                <h3 className="text-2xl font-black text-white uppercase tracking-wider mb-4">Get in Touch</h3>
+                                <p className="text-slate-400 text-sm leading-relaxed max-w-md mx-auto mb-10">
+                                    Have questions about our coordination engine, pricing, or custom enterprise solutions? Our team of RF professionals is ready to assist.
+                                </p>
+                                
+                                <a 
+                                    href="mailto:info@rfsuite.net"
+                                    className="px-10 py-4 rounded-2xl bg-indigo-600 text-white text-xs font-black uppercase tracking-[0.2em] hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-500/20 flex items-center gap-3 group"
+                                >
+                                    <span>info@rfsuite.net</span>
+                                    <Zap size={14} className="group-hover:translate-x-1 transition-transform" />
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </section>

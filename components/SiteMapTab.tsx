@@ -56,6 +56,7 @@ const SiteMapTab: React.FC<SiteMapTabProps> = ({ festivalState, multizoneState, 
     const [scalePoints, setScalePoints] = useState<{ x: number, y: number }[]>([]);
     const [isDistanceModalOpen, setIsDistanceModalOpen] = useState(false);
     const [distanceInputValue, setDistanceInputValue] = useState("");
+    const [showCoverage, setShowCoverage] = useState(false);
 
     // Auto-calculate distances when positions or scale change for the ACTIVE context
     useEffect(() => {
@@ -190,6 +191,15 @@ const SiteMapTab: React.FC<SiteMapTabProps> = ({ festivalState, multizoneState, 
                     <p className="text-[10px] text-slate-500 uppercase font-bold">Calibration</p>
                     <p className="font-mono text-cyan-300 text-xs">{scale ? `${scale.meters.toFixed(1)}m / ${scale.pixels.toFixed(0)}px` : 'Not Calibrated'}</p>
                 </div>
+                <div className="flex items-center justify-center p-2 bg-slate-800 rounded-lg border border-slate-700">
+                    <button 
+                        onClick={() => setShowCoverage(!showCoverage)}
+                        disabled={!scale}
+                        className={`w-full h-full text-[10px] font-black uppercase tracking-widest transition-all ${showCoverage ? 'text-amber-400 bg-amber-400/10' : 'text-slate-500 hover:text-slate-300'} disabled:opacity-30`}
+                    >
+                        {showCoverage ? 'Hide Hot Zones' : 'Show Hot Zones'}
+                    </button>
+                </div>
             </div>
 
             <div 
@@ -203,6 +213,28 @@ const SiteMapTab: React.FC<SiteMapTabProps> = ({ festivalState, multizoneState, 
                 onClick={handleMapClick}
             >
                 {image ? <img src={image} className="w-full h-full object-contain pointer-events-none no-invert" alt="Map Layer"/> : <div className="flex items-center justify-center h-full text-slate-600 font-mono italic">Upload a map and place your {activeContext === 'festival' ? 'stages' : 'exhibition booths'}...</div>}
+                
+                {/* Coverage Circles (Hot Zones) */}
+                {image && showCoverage && scale && zoneConfigs.map((_, i) => {
+                    const pos = positions[i];
+                    if (!pos) return null;
+                    const radiusInPixels = (50 / scale.meters) * scale.pixels; // 50m radius
+                    return (
+                        <div 
+                            key={`coverage-${i}`}
+                            className="absolute rounded-full pointer-events-none bg-amber-500/10 border border-amber-500/20 animate-pulse"
+                            style={{
+                                left: `${pos.x}px`,
+                                top: `${pos.y}px`,
+                                width: `${radiusInPixels * 2}px`,
+                                height: `${radiusInPixels * 2}px`,
+                                transform: 'translate(-50%, -50%)',
+                                zIndex: 5
+                            }}
+                        />
+                    );
+                })}
+
                 {scalingStep > 0 && <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-6 py-2 rounded-full text-xs font-black shadow-2xl animate-bounce">Click Point {scalingStep} of 2 on the Map</div>}
                 {image && zoneConfigs.map((zone, index) => {
                     const pos = positions[index] || { x: 50 + index * 30, y: 50 + index * 30 };

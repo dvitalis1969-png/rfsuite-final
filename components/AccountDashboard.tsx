@@ -225,7 +225,6 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({ user, onClose, onLo
 
     // Use relative path for API calls - this works on both localhost and Render automatically
     const API_BASE = ''; 
-    const APP_VERSION = "2.6-LIVE-STRIPE-UPDATE"; // Version indicator to verify deployment
 
     const handleSubscribe = async (priceId: string) => {
         const targetUrl = `${API_BASE}/api/create-checkout-session`;
@@ -233,7 +232,7 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({ user, onClose, onLo
             setIsLoading(true);
             setLastError(null);
             toast.info("Connecting to Stripe...", { description: `Price ID: ${priceId}` });
-            console.log(`[v${APP_VERSION}] Initiating checkout to: ${targetUrl}`);
+            console.log(`Initiating checkout to: ${targetUrl}`);
             
             const response = await fetch(targetUrl, {
                 method: 'POST',
@@ -249,8 +248,8 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({ user, onClose, onLo
             const contentType = response.headers.get("content-type");
             if (!contentType || !contentType.includes("application/json")) {
                 const text = await response.text();
-                console.error(`[v${APP_VERSION}] Invalid response from ${targetUrl}:`, text.substring(0, 100));
-                throw new Error(`Server returned an invalid response (likely HTML) from ${targetUrl}. Please ensure you are running the latest version (v${APP_VERSION}).`);
+                console.error(`Invalid response from ${targetUrl}:`, text.substring(0, 100));
+                throw new Error(`Server returned an invalid response (likely HTML) from ${targetUrl}.`);
             }
             
             const data = await response.json();
@@ -311,28 +310,6 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({ user, onClose, onLo
         } catch (error) {
             console.error('Portal error:', error);
             toast.error('Failed to open billing portal.');
-            setIsLoading(false);
-        }
-    };
-
-    const simulateSubscription = async (tierName: string) => {
-        if (!currentUser?.id) return;
-        setIsLoading(true);
-        try {
-            if (db) {
-                const status = tierName === 'none' ? 'none' : 'active';
-                await setDoc(doc(db, 'users', currentUser.id), {
-                    subscriptionStatus: status,
-                    subscription: tierName,
-                    lastUpdated: new Date().toISOString()
-                }, { merge: true });
-                toast.success(`SIMULATION: ${tierName} activated successfully!`);
-                window.location.reload();
-            }
-        } catch (err) {
-            console.error("Simulation failed:", err);
-            toast.error("Simulation failed. Check console for details.");
-        } finally {
             setIsLoading(false);
         }
     };
@@ -417,9 +394,6 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({ user, onClose, onLo
                                         <div className="flex items-center justify-between">
                                             <h4 className="text-xl font-black text-white uppercase tracking-wider">{currentUser?.name || 'User'}</h4>
                                             <div className="flex items-center space-x-3">
-                                                {currentUser?.email === 'dvitalis1969@gmail.com' && (
-                                                    <span className="text-[10px] font-black text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-md border border-indigo-500/20 uppercase tracking-widest">v{APP_VERSION}</span>
-                                                )}
                                                 <button 
                                                     onClick={() => {
                                                         fetchLatestUser();
@@ -499,60 +473,7 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({ user, onClose, onLo
                                         <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Member Since</p>
                                         <p className="text-white font-bold">Today</p>
                                     </div>
-                                    {currentUser?.email === 'dvitalis1969@gmail.com' && (
-                                        <div className="p-6 bg-slate-950 border border-white/5 rounded-3xl">
-                                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">System Status</p>
-                                            <div className="flex gap-2 mt-1">
-                                                <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-tighter ${configStatus.stripe ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
-                                                    Stripe: {configStatus.stripe ? `Ready (${configStatus.stripeMode})` : 'Not Set'}
-                                                </span>
-                                                {configStatus.stripe && (
-                                                    <span className="px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400 text-[8px] font-black uppercase tracking-tighter">
-                                                        Key: {configStatus.stripePrefix}
-                                                    </span>
-                                                )}
-                                                <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-tighter ${configStatus.firebase ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
-                                                    Firebase: {configStatus.firebase ? 'Ready' : 'Not Set'}
-                                                </span>
-                                            </div>
-                                            {lastError && (
-                                                <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
-                                                    <p className="text-[8px] font-black text-red-400 uppercase tracking-widest mb-1">Last Error (Admin Only)</p>
-                                                    <p className="text-[10px] text-red-300 font-mono break-all">{lastError}</p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
                                 </div>
-                                
-                                {currentUser?.email === 'dvitalis1969@gmail.com' && (
-                                    <div className="p-6 bg-indigo-600/10 border border-indigo-600/20 rounded-3xl">
-                                        <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-4">Test & Debug Tools</h4>
-                                        <div className="flex flex-wrap gap-3">
-                                            <button 
-                                                onClick={() => simulateSubscription('48 Hour Pass')}
-                                                className="px-4 py-2 bg-indigo-600/20 hover:bg-indigo-600/40 border border-indigo-600/30 rounded-xl text-[9px] font-black text-white uppercase tracking-widest transition-all"
-                                            >
-                                                Simulate 48h Pass
-                                            </button>
-                                            <button 
-                                                onClick={() => simulateSubscription('1 Month Pro')}
-                                                className="px-4 py-2 bg-indigo-600/20 hover:bg-indigo-600/40 border border-indigo-600/30 rounded-xl text-[9px] font-black text-white uppercase tracking-widest transition-all"
-                                            >
-                                                Simulate Pro Month
-                                            </button>
-                                            <button 
-                                                onClick={() => simulateSubscription('none')}
-                                                className="px-4 py-2 bg-red-600/20 hover:bg-red-600/40 border border-red-600/30 rounded-xl text-[9px] font-black text-white uppercase tracking-widest transition-all"
-                                            >
-                                                Simulate Free Tier
-                                            </button>
-                                        </div>
-                                        <p className="mt-3 text-[9px] text-slate-500 font-medium italic">
-                                            * These buttons bypass Stripe for testing the membership logic in Firestore.
-                                        </p>
-                                    </div>
-                                )}
                             </div>
                         </div>
                     )}

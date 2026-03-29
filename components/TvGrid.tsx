@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
+import { HelpCircle } from 'lucide-react';
 import { UK_TV_CHANNELS, US_TV_CHANNELS } from '../constants';
 import { TVChannelState } from '../types';
 import { useTvLookup } from '../hooks/useTvLookup';
@@ -258,18 +259,24 @@ const TvGrid: React.FC<TvGridProps> = ({
                     <p className="text-[7px] text-slate-600 font-medium uppercase tracking-widest text-center max-w-lg">
                         Channels clear (Emerald) if no transmitter/scan detected. Manual overrides (Mic/IEM/Both) exclude equipment types. Use 'Clear All' to reset.
                     </p>
-                </div>
-                <div className="mt-4 p-3 bg-slate-900/50 rounded-lg border border-slate-800 text-[10px] text-slate-400 font-mono">
-                    <p className="font-bold text-slate-300 mb-2">TV channel status is a derivation of equation:</p>
-                    <p className="text-center text-xs text-indigo-300 mb-3">
-                        P<sub>Mic</sub> - P<sub>TV</sub> + 20 * log<sub>10</sub>(d<sub>TV</sub> / d<sub>Mic</sub>) ≥ Margin
-                    </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
-                        <p><span className="text-slate-300 font-bold">P<sub>Mic</sub>:</span> Microphone Transmitter Power (dBm)</p>
-                        <p><span className="text-slate-300 font-bold">P<sub>TV</sub>:</span> TV Transmitter Power (ERP in dBm)</p>
-                        <p><span className="text-slate-300 font-bold">d<sub>TV</sub>:</span> Distance to TV Transmitter (km)</p>
-                        <p><span className="text-slate-300 font-bold">d<sub>Mic</sub>:</span> Distance from Mic to Receiver (km)</p>
-                        <p className="sm:col-span-2"><span className="text-slate-300 font-bold">Margin:</span> Required Signal-to-Interference Ratio (dB) = 20dB</p>
+                    <div className="flex items-center gap-1.5 mt-1 group relative cursor-help">
+                        <span className="text-[8px] font-black uppercase text-slate-500 tracking-widest">TV Channel Clearance Criteria</span>
+                        <HelpCircle size={10} className="text-slate-500" />
+                        
+                        <div className="invisible group-hover:visible absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 p-4 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 text-[10px] text-slate-400 font-mono pointer-events-none">
+                            <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-slate-900 border-b border-r border-slate-700 rotate-45"></div>
+                            <p className="font-bold text-slate-300 mb-2">TV channel status is a derivation of equation:</p>
+                            <p className="text-center text-xs text-indigo-300 mb-3">
+                                P<sub>Mic</sub> - P<sub>TV</sub> + 20 * log<sub>10</sub>(d<sub>TV</sub> / d<sub>Mic</sub>) ≥ Margin
+                            </p>
+                            <div className="space-y-1.5">
+                                <p><span className="text-slate-300 font-bold">P<sub>Mic</sub>:</span> Microphone Transmitter Power (dBm)</p>
+                                <p><span className="text-slate-300 font-bold">P<sub>TV</sub>:</span> TV Transmitter Power (ERP in dBm)</p>
+                                <p><span className="text-slate-300 font-bold">d<sub>TV</sub>:</span> Distance to TV Transmitter (km)</p>
+                                <p><span className="text-slate-300 font-bold">d<sub>Mic</sub>:</span> Distance from Mic to Receiver (km)</p>
+                                <p><span className="text-slate-300 font-bold">Margin:</span> Required Signal-to-Interference Ratio (dB) = 20dB</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
