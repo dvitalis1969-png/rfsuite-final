@@ -786,6 +786,7 @@ const App: React.FC = () => {
                         projectName={currentProject?.name} 
                         onManageProjects={() => setProjectDashboardOpen(true)} 
                         onSaveProject={saveCurrentProject} 
+                        onSaveAsProject={() => setIsSaveModalOpen(true)}
                         onExportProject={() => {
                             const state = getCurrentAppState();
                             const projectToExport: Project = currentProject 
@@ -950,7 +951,12 @@ const App: React.FC = () => {
                     }}
                 />
             )}
-            <SaveProjectModal isOpen={isSaveModalOpen} onClose={() => setIsSaveModalOpen(false)} onSave={handleSaveAsNewProject} />
+            <SaveProjectModal 
+                isOpen={isSaveModalOpen} 
+                onClose={() => setIsSaveModalOpen(false)} 
+                onSave={handleSaveAsNewProject} 
+                initialName={currentProject?.name}
+            />
             <SavePopupModal isOpen={isSavePopupOpen} onClose={() => setIsSavePopupOpen(false)} />
             {isProjectDashboardOpen && <ProjectDashboard onLoadProject={p => { setCurrentProject(p); loadAppState(p.data); dbService.setLastProjectId(p.id); setProjectDashboardOpen(false); }} onCreateProject={async n => { const p = { name: n, lastModified: new Date(), data: initialState }; const id = await dbService.saveProject(p); setCurrentProject({...p, id}); loadAppState(p.data); dbService.setLastProjectId(id); setProjectDashboardOpen(false); }} onDeleteProject={async id => { await dbService.deleteProject(id); if(currentProject?.id === id){ setCurrentProject(null); dbService.clearLastProjectId(); } }} onClose={() => setProjectDashboardOpen(false)} />}
             {isCustomEquipmentManagerOpen && <div className="no-invert"><CustomEquipmentManager customProfiles={customEquipment} setCustomProfiles={setCustomEquipment} onClose={() => setCustomEquipmentManagerOpen(false)} /></div>}
@@ -1002,8 +1008,15 @@ const App: React.FC = () => {
     );
 };
 
-const SaveProjectModal = ({ isOpen, onClose, onSave }: { isOpen: boolean, onClose: () => void, onSave: (name: string) => void }) => {
-    const [name, setName] = useState('');
+const SaveProjectModal = ({ isOpen, onClose, onSave, initialName = '' }: { isOpen: boolean, onClose: () => void, onSave: (name: string) => void, initialName?: string }) => {
+    const [name, setName] = useState(initialName);
+    
+    useEffect(() => {
+        if (isOpen) {
+            setName(initialName ? `${initialName} (Copy)` : '');
+        }
+    }, [isOpen, initialName]);
+
     if (!isOpen) return null;
     return (
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[100] flex items-center justify-center p-4">

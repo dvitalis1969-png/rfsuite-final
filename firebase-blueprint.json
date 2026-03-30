@@ -69,9 +69,25 @@
         "subscriptionStatus": { "type": "string" },
         "stripeCustomerId": { "type": "string" }
       }
+    },
+    "Project": {
+      "title": "Project",
+      "description": "A saved project containing app state",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "userId": { "type": "string" },
+        "lastModified": { "type": "object" },
+        "data": { "type": "string", "description": "JSON stringified app state" }
+      },
+      "required": ["name", "userId", "lastModified", "data"]
     }
   },
   "firestore": {
+    "/projects/{projectId}": {
+      "schema": { "$ref": "Project" },
+      "description": "User projects"
+    },
     "/presence/{projectId}/users/{userId}": {
       "schema": { "$ref": "Presence" },
       "description": "User presence in a project"

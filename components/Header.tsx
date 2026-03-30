@@ -5,6 +5,7 @@ interface HeaderProps {
     projectName?: string;
     onManageProjects: () => void;
     onSaveProject: () => void;
+    onSaveAsProject?: () => void;
     onExportProject: () => void;
     activeApp: AppCategory | null;
     onGoHome: () => void;
@@ -36,6 +37,7 @@ const Header: React.FC<HeaderProps> = ({
     projectName, 
     onManageProjects, 
     onSaveProject, 
+    onSaveAsProject,
     onExportProject, 
     activeApp, 
     onGoHome, 
@@ -220,6 +222,19 @@ const Header: React.FC<HeaderProps> = ({
                                         </p>
                                     </div>
                                 </button>
+
+                                {onSaveAsProject && (
+                                    <button 
+                                        onClick={() => { onSaveAsProject(); setIsProjectMenuOpen(false); }}
+                                        className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 transition-all text-left group"
+                                    >
+                                        <div className="w-9 h-9 bg-slate-900 border border-white/5 rounded-lg flex items-center justify-center text-lg group-hover:scale-110 transition-transform">💾+</div>
+                                        <div>
+                                            <p className="font-bold text-[11px] text-white uppercase tracking-wider">Save As...</p>
+                                            <p className="text-[9px] text-slate-500 uppercase font-black tracking-tighter">Create New Copy</p>
+                                        </div>
+                                    </button>
+                                )}
 
                                 <button 
                                     onClick={() => { onExportProject(); setIsProjectMenuOpen(false); }}

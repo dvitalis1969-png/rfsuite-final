@@ -283,7 +283,7 @@ async function startServer() {
       
       let emailUser = process.env.EMAIL_USER;
       let emailPass = process.env.EMAIL_PASS;
-      console.log(`📧 Checking credentials: EMAIL_USER=${emailUser ? 'PRESENT' : 'MISSING'}, EMAIL_PASS=${emailPass ? 'PRESENT' : 'MISSING'}`);
+      console.log(`📧 Checking credentials: EMAIL_USER='${emailUser}', EMAIL_PASS='${emailPass ? '***' : 'MISSING'}'`);
       let emailConfig: any = {};
 
       // Fallback to local file if env vars are missing
@@ -307,12 +307,12 @@ async function startServer() {
       }
 
       // Auto-detect SMTP settings based on domain if not explicitly provided
-      host = emailConfig.host;
-      let port = emailConfig.port;
-      let secure = emailConfig.secure;
+      host = process.env.SMTP_HOST || emailConfig.host;
+      let port = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : emailConfig.port;
+      let secure = process.env.SMTP_SECURE ? process.env.SMTP_SECURE === 'true' : emailConfig.secure;
 
       if (!host) {
-        if (emailUser.includes('@outlook.com') || emailUser.includes('@hotmail.com') || emailUser.includes('@live.com')) {
+        if (emailUser.includes('@outlook.com') || emailUser.includes('@hotmail.com') || emailUser.includes('@live.com') || emailUser.includes('@rfsuite.net')) {
           host = 'smtp.office365.com';
           port = 587;
           secure = false; // Office365 uses STARTTLS on 587
@@ -344,7 +344,7 @@ async function startServer() {
         socketTimeout: 10000,
       });
 
-      const supportEmail = process.env.SUPPORT_EMAIL || emailUser;
+      const supportEmail = process.env.SUPPORT_EMAIL || 'info@rfsuite.net';
       console.log(`📧 Sending support email to: ${supportEmail ? supportEmail.substring(0, 3) + '...' : 'MISSING'}`);
 
       await transporter.sendMail({

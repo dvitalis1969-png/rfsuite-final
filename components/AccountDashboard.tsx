@@ -607,7 +607,8 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({ user, onClose, onLo
 
                     {activeTab === 'contact' && (
                         <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                            <h3 className="text-2xl font-black text-white uppercase tracking-tight mb-8">Contact Support</h3>
+                            <h3 className="text-2xl font-black text-white uppercase tracking-tight mb-2">Contact Support</h3>
+                            <p className="text-sm text-slate-400 mb-8">Have a question or need help? Send us a message or email us directly at <a href="mailto:info@rfsuite.net" className="text-indigo-400 hover:text-indigo-300 transition-colors">info@rfsuite.net</a>.</p>
                             <ContactForm />
                         </div>
                     )}

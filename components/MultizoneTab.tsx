@@ -211,6 +211,72 @@ const MultizoneTab: React.FC<MultizoneTabProps> = ({
         }
     };
 
+    const handleRemoveZone = (index: number) => {
+        if (numZones <= 1) {
+            toast.error("At least one zone is required.");
+            return;
+        }
+
+        // 1. Update Zone Configs
+        const nextZoneConfigs = zoneConfigs.filter((_, i) => i !== index);
+        setZoneConfigs(nextZoneConfigs);
+
+        // 2. Update Equipment Groups
+        const nextGroups = equipmentGroups
+            .filter(g => g.zoneIndex !== index)
+            .map(g => ({
+                ...g,
+                zoneIndex: (g.zoneIndex ?? 0) > index ? (g.zoneIndex ?? 0) - 1 : g.zoneIndex
+            }));
+        setEquipmentGroups(nextGroups);
+
+        // 3. Update Manual Frequencies
+        if (setManualFrequencies) {
+            const nextManualFrequencies = manualFrequencies
+                .filter(f => f.zoneIndex !== index)
+                .map(f => ({
+                    ...f,
+                    zoneIndex: (f.zoneIndex ?? 0) > index ? (f.zoneIndex ?? 0) - 1 : f.zoneIndex
+                }));
+            setManualFrequencies(nextManualFrequencies);
+        }
+
+        // 4. Update Distances
+        const nextDistances = distances
+            .filter((_, i) => i !== index)
+            .map(row => row.filter((_, j) => j !== index));
+        setDistances(nextDistances);
+
+        // 5. Update Compatibility Matrix
+        const nextMatrix = compatibilityMatrix
+            .filter((_, i) => i !== index)
+            .map(row => row.filter((_, j) => j !== index));
+        setCompatibilityMatrix(nextMatrix);
+
+        // 6. Update Results if they exist
+        if (results) {
+            const nextResultsZones = results.zones.filter((_, i) => i !== index);
+            setResults({ ...results, zones: nextResultsZones });
+        }
+
+        // 7. Update Num Zones
+        setNumZones(numZones - 1);
+        toast.success(`Zone ${index + 1} removed.`);
+    };
+
+    const handleDeleteAllZones = () => {
+        if (window.confirm("Are you sure you want to delete all zones? This will reset the planning to a single empty zone.")) {
+            setNumZones(1);
+            setZoneConfigs([{ name: 'Zone 1', count: 0 }]);
+            setEquipmentGroups([]);
+            if (setManualFrequencies) setManualFrequencies([]);
+            setDistances([[0]]);
+            setCompatibilityMatrix([[false]]);
+            setResults(null);
+            toast.success("All zones cleared.");
+        }
+    };
+
     const handleAddGroup = (zIdx: number = 0) => {
         const newGroup: ZoneConfig = {
             name: `Group ${equipmentGroups.length + 1}`,
@@ -806,6 +872,12 @@ const MultizoneTab: React.FC<MultizoneTabProps> = ({
                         <p className="text-[10px] text-slate-400 uppercase tracking-widest mt-1">Multi-Equipment Spatial Coordination Engine</p>
                     </div>
                     <div className="flex gap-4 items-center">
+                        <button 
+                            onClick={handleDeleteAllZones}
+                            className="text-[9px] font-black uppercase bg-rose-500/10 text-rose-400 border border-rose-500/30 px-3 py-1.5 rounded-lg hover:bg-rose-600 hover:text-white transition-all"
+                        >
+                            Delete All Zones
+                        </button>
                         <div className="flex flex-col items-end">
                             <label className="text-[9px] text-slate-500 font-black uppercase mb-1">Zones/Locations</label>
                             <input type="number" value={numZonesInput} onChange={e => handleNumZonesChange(e.target.value)} min="1" max="20" className="w-20 bg-slate-950 border border-slate-700 rounded p-1.5 text-xs text-center text-indigo-400 font-black" />
@@ -832,6 +904,13 @@ const MultizoneTab: React.FC<MultizoneTabProps> = ({
                                         title="Add Equipment to this Zone"
                                     >
                                         + GEAR
+                                    </button>
+                                    <button 
+                                        onClick={() => handleRemoveZone(idx)}
+                                        className="px-2 bg-rose-600/20 text-rose-400 border-l border-white/5 hover:bg-rose-600 hover:text-white transition-all text-[12px] font-black"
+                                        title="Delete this Zone"
+                                    >
+                                        &times;
                                     </button>
                                 </div>
                             ))}
