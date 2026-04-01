@@ -749,13 +749,13 @@ const App: React.FC = () => {
                             console.log(`[Firestore User Update] Data for ${firebaseUser.email}:`, data);
                             const updatedUser = {
                                 id: firebaseUser.uid,
-                                email: firebaseUser.email,
+                                email: data.email || firebaseUser.email,
                                 name: data.name || firebaseUser.displayName || firebaseUser.email?.split('@')[0],
                                 subscription: data.subscription || 'none',
                                 subscriptionStatus: data.subscriptionStatus || 'none',
                                 stripeCustomerId: data.stripeCustomerId || null,
                                 role: data.role || 'user',
-                                ...data
+                                ...data,
                             };
                             console.log(`[Firestore User Update] Final User Object:`, updatedUser);
                             setUser(updatedUser);

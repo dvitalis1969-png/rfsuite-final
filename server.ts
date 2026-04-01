@@ -175,10 +175,12 @@ async function startServer() {
   });
 
   // Stripe webhook needs raw body
-  app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  const stripeWebhookHandler = async (req: any, res: any) => {
     initFirebaseAdmin();
     const stripe = getStripe();
     const sig = req.headers['stripe-signature'];
+    const contentType = req.headers['content-type'];
+    console.log(`[Webhook Debug] Signature: ${sig}, Content-Type: ${contentType}, RawBody exists: ${!!req.rawBody}, RawBody length: ${req.rawBody ? req.rawBody.length : 'undefined'}`);
     let endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
     if (!endpointSecret) {
@@ -198,7 +200,7 @@ async function startServer() {
 
     let event: Stripe.Event;
     try {
-      event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+      event = stripe.webhooks.constructEvent(req.rawBody, sig, endpointSecret);
     } catch (err: any) {
       console.error(`Webhook Error: ${err.message}`);
       return res.status(400).send(`Webhook Error: ${err.message}`);
@@ -206,7 +208,7 @@ async function startServer() {
 
     try {
       if (!firebaseAdminInitialized) throw new Error("Firebase Admin not initialized");
-      const db = getFirestore();
+      const db = getFirestore(undefined, process.env.VITE_FIREBASE_DATABASE_ID || '(default)');
 
       if (event.type === 'checkout.session.completed') {
         const session = event.data.object as Stripe.Checkout.Session;
@@ -250,27 +252,17 @@ async function startServer() {
           console.log(`[Webhook] 📝 Updating Firestore for user ${userId} with:`, updateData);
           await db.collection('users').doc(userId).set(updateData, { merge: true });
           console.log(`[Webhook] ✅ Firestore update successful for ${userId}`);
-        } else {
-          console.warn(`[Webhook] ⚠️ No client_reference_id found in session ${session.id}`);
-        }
-      } else if (event.type === 'customer.subscription.deleted') {
-        const subscription = event.data.object as Stripe.Subscription;
-        console.log(`[Webhook] ❌ customer.subscription.deleted: ${subscription.id}`);
-        const usersRef = db.collection('users');
-        const snapshot = await usersRef.where('stripeSubscriptionId', '==', subscription.id).get();
-        if (!snapshot.empty) {
-          snapshot.forEach(async (doc) => {
-            console.log(`[Webhook] 📝 Updating user ${doc.id} status to canceled`);
-            await doc.ref.update({ subscriptionStatus: 'canceled' });
-          });
         }
       }
       res.json({ received: true });
     } catch (err: any) {
       console.error(`[Webhook] ❌ Error processing webhook event:`, err);
-      res.status(500).json({ error: err.message });
+      res.status(500).send(`Webhook Error: ${err.message}`);
     }
-  });
+  };
+
+  app.post('/api/stripe-webhook', express.raw({ type: 'application/json', verify: (req: any, res: any, buf: Buffer) => { req.rawBody = buf; } }), stripeWebhookHandler);
+  app.post('/api/stripe-webhook/', express.raw({ type: 'application/json', verify: (req: any, res: any, buf: Buffer) => { req.rawBody = buf; } }), stripeWebhookHandler);
 
   app.get("/api/config", (req, res) => {
     let stripePublishable = process.env.VITE_STRIPE_PUBLISHABLE_KEY;
@@ -444,7 +436,7 @@ async function startServer() {
         console.log(`[Success Route] Session retrieved. UserID: ${userId}, FirebaseReady: ${firebaseAdminInitialized}`);
         
         if (userId && firebaseAdminInitialized) {
-          const db = getFirestore();
+          const db = getFirestore(undefined, process.env.VITE_FIREBASE_DATABASE_ID || '(default)');
           const updateData: any = { 
             subscriptionStatus: 'active',
             lastUpdated: new Date().toISOString()
@@ -496,7 +488,7 @@ async function startServer() {
       const { userId } = req.body;
       if (!userId) return res.status(400).json({ error: "Missing userId" });
       
-      const db = getFirestore();
+      const db = getFirestore(undefined, process.env.VITE_FIREBASE_DATABASE_ID || '(default)');
       const updateData: any = {
         subscription: "48 Hour Pass Test",
         subscriptionStatus: "active",

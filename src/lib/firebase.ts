@@ -20,7 +20,7 @@ if (configKeys.length > 0) {
     storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
     messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
     appId: import.meta.env.VITE_FIREBASE_APP_ID,
-    firestoreDatabaseId: import.meta.env.VITE_FIRESTORE_DATABASE_ID || '(default)'
+    firestoreDatabaseId: import.meta.env.VITE_FIREBASE_DATABASE_ID || import.meta.env.VITE_FIRESTORE_DATABASE_ID || '(default)'
   };
 }
 
@@ -38,7 +38,7 @@ console.log("✅ Firebase initialized with config:", {
   databaseId: firebaseConfig.firestoreDatabaseId || '(default)'
 });
 
-export const getDocWithTimeout = async (docRef: DocumentReference, timeoutMs: number = 5000): Promise<DocumentSnapshot> => {
+export const getDocWithTimeout = async (docRef: DocumentReference, timeoutMs: number = 15000): Promise<DocumentSnapshot> => {
   return Promise.race([
     getDoc(docRef),
     new Promise<DocumentSnapshot>((_, reject) => 
@@ -47,7 +47,7 @@ export const getDocWithTimeout = async (docRef: DocumentReference, timeoutMs: nu
   ]);
 };
 
-export const getDocsWithTimeout = async (query: any, timeoutMs: number = 5000): Promise<any> => {
+export const getDocsWithTimeout = async (query: any, timeoutMs: number = 15000): Promise<any> => {
   return Promise.race([
     getDocs(query),
     new Promise<any>((_, reject) => 
@@ -56,7 +56,7 @@ export const getDocsWithTimeout = async (query: any, timeoutMs: number = 5000): 
   ]);
 };
 
-export const setDocWithTimeout = async (docRef: DocumentReference, data: any, options?: any, timeoutMs: number = 5000): Promise<void> => {
+export const setDocWithTimeout = async (docRef: DocumentReference, data: any, options?: any, timeoutMs: number = 15000): Promise<void> => {
   return Promise.race([
     options ? setDoc(docRef, data, options) : setDoc(docRef, data),
     new Promise<void>((_, reject) => 
@@ -65,7 +65,7 @@ export const setDocWithTimeout = async (docRef: DocumentReference, data: any, op
   ]);
 };
 
-export const addDocWithTimeout = async (collectionRef: CollectionReference, data: any, timeoutMs: number = 5000): Promise<DocumentReference> => {
+export const addDocWithTimeout = async (collectionRef: CollectionReference, data: any, timeoutMs: number = 15000): Promise<DocumentReference> => {
   return Promise.race([
     addDoc(collectionRef, data),
     new Promise<DocumentReference>((_, reject) => 
@@ -74,7 +74,7 @@ export const addDocWithTimeout = async (collectionRef: CollectionReference, data
   ]);
 };
 
-export const updateDocWithTimeout = async (docRef: DocumentReference, data: any, timeoutMs: number = 5000): Promise<void> => {
+export const updateDocWithTimeout = async (docRef: DocumentReference, data: any, timeoutMs: number = 15000): Promise<void> => {
   return Promise.race([
     updateDoc(docRef, data),
     new Promise<void>((_, reject) => 
@@ -83,7 +83,7 @@ export const updateDocWithTimeout = async (docRef: DocumentReference, data: any,
   ]);
 };
 
-export const deleteDocWithTimeout = async (docRef: DocumentReference, timeoutMs: number = 5000): Promise<void> => {
+export const deleteDocWithTimeout = async (docRef: DocumentReference, timeoutMs: number = 15000): Promise<void> => {
   return Promise.race([
     deleteDoc(docRef),
     new Promise<void>((_, reject) => 
