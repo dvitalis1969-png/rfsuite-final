@@ -180,6 +180,9 @@ async function startServer() {
     initFirebaseAdmin();
     const stripe = getStripe();
     const sig = req.headers['stripe-signature'];
+    console.log(`[Webhook Debug] Signature: ${sig}`);
+    console.log(`[Webhook Debug] Body type: ${typeof req.body}`);
+    console.log(`[Webhook Debug] Is Buffer: ${Buffer.isBuffer(req.body)}`);
     
     let endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -199,7 +202,8 @@ async function startServer() {
 
     let event: Stripe.Event;
     try {
-      event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+      const rawBody = Buffer.isBuffer(req.body) ? req.body : Buffer.from(req.body);
+      event = stripe.webhooks.constructEvent(rawBody, sig, endpointSecret);
     } catch (err: any) {
       console.error(`Webhook Error: ${err.message}`);
       return res.status(400).send(`Webhook Error: ${err.message}`);
