@@ -381,6 +381,7 @@ export interface User {
     subscriptionStatus?: string;
     stripeCustomerId?: string | null;
     role?: string;
+    expiresAt?: string;
 }
 
 export interface PublicProfile {

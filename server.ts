@@ -51,6 +51,8 @@ function getStripe(): Stripe {
 }
 
 let firebaseAdminInitialized = false;
+let lastFirebaseError: string | null = null;
+
 function initFirebaseAdmin() {
   if (!firebaseAdminInitialized) {
     const projectId = process.env.FIREBASE_PROJECT_ID;
@@ -76,18 +78,21 @@ function initFirebaseAdmin() {
             credential: cert(sa),
           });
           firebaseAdminInitialized = true;
-          console.log("✅ Firebase Admin initialized from local service-account.json");
+          console.log("✅ Firebase Admin successfully initialized from local service-account.json");
           return;
-        } catch (e) {
+        } catch (e: any) {
+          lastFirebaseError = `Local SA Error: ${e.message}`;
           console.error("Error loading local service-account.json:", e);
         }
       }
 
-      console.warn("Firebase Admin credentials missing from environment and local file:", { 
-        projectId: !!projectId, 
-        clientEmail: !!clientEmail, 
-        privateKey: !!privateKey 
-      });
+      const missing = [];
+      if (!projectId) missing.push("PROJECT_ID");
+      if (!clientEmail) missing.push("CLIENT_EMAIL");
+      if (!privateKey) missing.push("PRIVATE_KEY");
+      
+      lastFirebaseError = `Missing credentials: ${missing.join(", ")}`;
+      console.warn("Firebase Admin credentials missing from environment and local file:", lastFirebaseError);
       return;
     }
 
@@ -101,8 +106,10 @@ function initFirebaseAdmin() {
         }),
       });
       firebaseAdminInitialized = true;
-      console.log("✅ Firebase Admin successfully initialized");
-    } catch (err) {
+      lastFirebaseError = null;
+      console.log("✅ Firebase Admin successfully initialized from environment");
+    } catch (err: any) {
+      lastFirebaseError = err.message;
       console.error("❌ Firebase Admin initialization error:", err);
     }
   }
@@ -131,6 +138,13 @@ async function startServer() {
       status: "ok",
       version: "v2.5.1-STABLE-MARCH-17-13:12",
       firebaseAdminInitialized,
+      lastFirebaseError,
+      env: {
+        hasProjectId: !!process.env.FIREBASE_PROJECT_ID,
+        hasClientEmail: !!process.env.FIREBASE_CLIENT_EMAIL,
+        hasPrivateKey: !!process.env.FIREBASE_PRIVATE_KEY,
+        nodeEnv: process.env.NODE_ENV
+      },
       config: {
         stripeSecret: !!(process.env.STRIPE_SECRET_KEY || fs.existsSync(path.join(process.cwd(), 'stripe-config.json'))),
         stripePublishable: !!(process.env.VITE_STRIPE_PUBLISHABLE_KEY || fs.existsSync(path.join(process.cwd(), 'stripe-config.json'))),
@@ -197,6 +211,7 @@ async function startServer() {
       if (event.type === 'checkout.session.completed') {
         const session = event.data.object as Stripe.Checkout.Session;
         const userId = session.client_reference_id;
+        console.log(`[Webhook] 💰 checkout.session.completed received for userId: ${userId}, session: ${session.id}`);
         if (userId) {
           const updateData: any = { 
             subscriptionStatus: 'active',
@@ -212,6 +227,7 @@ async function startServer() {
             if (lineItem?.price?.product) {
               const product = lineItem.price.product as Stripe.Product;
               updateData.subscription = product.name;
+              console.log(`[Webhook] Plan identified: ${product.name}`);
             }
           } catch (e) {
             console.error("Error fetching product name in webhook:", e);
@@ -220,22 +236,39 @@ async function startServer() {
           if (session.customer) updateData.stripeCustomerId = session.customer;
           if (session.subscription) updateData.stripeSubscriptionId = session.subscription;
           
+          const planName = (session.metadata?.tierName || updateData.subscription || '').toLowerCase();
+          if (planName) {
+            if (planName.includes('48 hour')) {
+              updateData.expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+            } else if (planName.includes('7 day')) {
+              updateData.expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+            } else if (planName.includes('1 month')) {
+              updateData.expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+            }
+          }
+
+          console.log(`[Webhook] 📝 Updating Firestore for user ${userId} with:`, updateData);
           await db.collection('users').doc(userId).set(updateData, { merge: true });
+          console.log(`[Webhook] ✅ Firestore update successful for ${userId}`);
+        } else {
+          console.warn(`[Webhook] ⚠️ No client_reference_id found in session ${session.id}`);
         }
       } else if (event.type === 'customer.subscription.deleted') {
         const subscription = event.data.object as Stripe.Subscription;
+        console.log(`[Webhook] ❌ customer.subscription.deleted: ${subscription.id}`);
         const usersRef = db.collection('users');
         const snapshot = await usersRef.where('stripeSubscriptionId', '==', subscription.id).get();
         if (!snapshot.empty) {
           snapshot.forEach(async (doc) => {
+            console.log(`[Webhook] 📝 Updating user ${doc.id} status to canceled`);
             await doc.ref.update({ subscriptionStatus: 'canceled' });
           });
         }
       }
       res.json({ received: true });
-    } catch (err) {
-      console.error("Webhook processing error:", err);
-      res.status(500).send("Internal Server Error");
+    } catch (err: any) {
+      console.error(`[Webhook] ❌ Error processing webhook event:`, err);
+      res.status(500).json({ error: err.message });
     }
   });
 
@@ -426,6 +459,17 @@ async function startServer() {
           if (session.customer) updateData.stripeCustomerId = session.customer;
           if (session.subscription) updateData.stripeSubscriptionId = session.subscription;
           
+          const planName = (session.metadata?.tierName || updateData.subscription || '').toLowerCase();
+          if (planName) {
+            if (planName.includes('48 hour')) {
+              updateData.expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+            } else if (planName.includes('7 day')) {
+              updateData.expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+            } else if (planName.includes('1 month')) {
+              updateData.expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+            }
+          }
+
           console.log(`[Success Route] Updating Firestore for user ${userId}...`, updateData);
           await db.collection('users').doc(userId).set(updateData, { merge: true });
           console.log(`[Success Route] ✅ Firestore update successful`);
@@ -444,6 +488,34 @@ async function startServer() {
     res.redirect('/?checkout=cancel');
   });
 
+  app.post("/api/test-checkout-success", async (req, res) => {
+    try {
+      initFirebaseAdmin();
+      if (!firebaseAdminInitialized) throw new Error("Firebase Admin not initialized");
+      
+      const { userId } = req.body;
+      if (!userId) return res.status(400).json({ error: "Missing userId" });
+      
+      const db = getFirestore();
+      const updateData: any = {
+        subscription: "48 Hour Pass Test",
+        subscriptionStatus: "active",
+        lastUpdated: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
+        isTest: true
+      };
+      
+      console.log(`[Test Success] Simulating success for user ${userId}...`);
+      await db.collection('users').doc(userId).set(updateData, { merge: true });
+      console.log(`[Test Success] ✅ Mock update successful`);
+      
+      res.json({ success: true, message: "Mock update successful" });
+    } catch (err: any) {
+      console.error("[Test Success] ❌ Mock update failed:", err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   app.get("/api/portal-return", (req, res) => {
     res.redirect('/?portal=return');
   });
@@ -452,9 +524,9 @@ async function startServer() {
     try {
       console.log("[Checkout] Creating session request received");
       const stripe = getStripe();
-      const { priceId, userId, email, returnUrl } = req.body;
+      const { priceId, userId, email, returnUrl, tierName } = req.body;
       
-      console.log("[Checkout] Params:", { priceId, userId, email, returnUrl });
+      console.log("[Checkout] Params:", { priceId, userId, email, returnUrl, tierName });
 
       if (!priceId || !userId || !email || !returnUrl) {
         console.error("[Checkout] ❌ Missing required parameters");
@@ -499,6 +571,9 @@ async function startServer() {
         cancel_url: `${returnUrl}/api/checkout-cancel`,
         client_reference_id: userId,
         customer_email: email,
+        metadata: {
+          tierName: tierName || 'Unknown Pass'
+        }
       });
 
       console.log("[Checkout] ✅ Session created successfully:", session.id);

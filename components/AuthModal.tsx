@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { X, Mail, Lock, User, ArrowRight, Github, Eye, EyeOff } from 'lucide-react';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, signInWithPopup } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { auth, db, googleProvider } from '../src/lib/firebase';
+import { doc } from 'firebase/firestore';
+import { auth, db, googleProvider, getDocWithTimeout, setDocWithTimeout } from '../src/lib/firebase';
 
 interface AuthModalProps {
     isOpen: boolean;
@@ -36,25 +36,33 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess, initi
             const result = await signInWithPopup(auth, googleProvider);
             const user = result.user;
             
-            // Check if user exists in Firestore
-            const userDocRef = doc(db, 'users', user.uid);
-            const userDoc = await getDoc(userDocRef);
-            
             let subscription = 'none';
             let stripeCustomerId = null;
             
-            if (!userDoc.exists()) {
-                // Create new user document
-                await setDoc(userDocRef, {
-                    email: user.email,
-                    name: user.displayName || user.email?.split('@')[0],
-                    subscriptionStatus: 'none',
-                    createdAt: new Date().toISOString()
-                });
-            } else {
-                const data = userDoc.data();
-                subscription = data.subscriptionStatus || 'none';
-                stripeCustomerId = data.stripeCustomerId || null;
+            try {
+                // Check if user exists in Firestore
+                const userDocRef = doc(db, 'users', user.uid);
+                const userDoc = await getDocWithTimeout(userDocRef);
+                
+                if (!userDoc.exists()) {
+                    // Create new user document
+                    await setDocWithTimeout(userDocRef, {
+                        email: user.email,
+                        name: user.displayName || user.email?.split('@')[0],
+                        subscriptionStatus: 'none',
+                        createdAt: new Date().toISOString()
+                    });
+                } else {
+                    const data = userDoc.data();
+                    subscription = data.subscriptionStatus || 'none';
+                    stripeCustomerId = data.stripeCustomerId || null;
+                }
+            } catch (dbErr: any) {
+                if (dbErr.message && dbErr.message.includes('client is offline')) {
+                    console.warn("Firestore is offline or unreachable. Using default user settings.");
+                } else {
+                    console.error("Error fetching/saving user data:", dbErr);
+                }
             }
 
             onSuccess({
@@ -105,13 +113,21 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess, initi
                     await updateProfile(userCredential.user, { displayName: name });
                 }
                 
-                // Create user document in Firestore
-                await setDoc(doc(db, 'users', userCredential.user.uid), {
-                    email: userCredential.user.email,
-                    name: name || userCredential.user.email?.split('@')[0],
-                    subscriptionStatus: 'none',
-                    createdAt: new Date().toISOString()
-                });
+                try {
+                    // Create user document in Firestore
+                    await setDocWithTimeout(doc(db, 'users', userCredential.user.uid), {
+                        email: userCredential.user.email,
+                        name: name || userCredential.user.email?.split('@')[0],
+                        subscriptionStatus: 'none',
+                        createdAt: new Date().toISOString()
+                    });
+                } catch (dbErr: any) {
+                    if (dbErr.message && dbErr.message.includes('client is offline')) {
+                        console.warn("Firestore is offline or unreachable. User created but profile not saved to DB.");
+                    } else {
+                        console.error("Error saving user data:", dbErr);
+                    }
+                }
 
                 onSuccess({
                     id: userCredential.user.uid,
@@ -127,14 +143,18 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess, initi
                 let subscription = 'none';
                 let stripeCustomerId = null;
                 try {
-                    const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
+                    const userDoc = await getDocWithTimeout(doc(db, 'users', userCredential.user.uid));
                     if (userDoc.exists()) {
                         const data = userDoc.data();
                         subscription = data.subscriptionStatus || 'none';
                         stripeCustomerId = data.stripeCustomerId || null;
                     }
-                } catch (dbErr) {
-                    console.error("Error fetching user data:", dbErr);
+                } catch (dbErr: any) {
+                    if (dbErr.message && dbErr.message.includes('client is offline')) {
+                        console.warn("Firestore is offline or unreachable. Using default user settings.");
+                    } else {
+                        console.error("Error fetching user data:", dbErr);
+                    }
                 }
 
                 onSuccess({

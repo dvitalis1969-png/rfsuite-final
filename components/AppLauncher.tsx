@@ -54,7 +54,9 @@ const AppCard: React.FC<{
 );
 
 const AppLauncher: React.FC<AppLauncherProps> = ({ onSelectApp, user }) => {
+    console.log(`[AppLauncher] Rendering for user:`, user?.email || 'null');
     const pro = isPro(user);
+    console.log(`[AppLauncher] isPro result:`, pro);
     
     return (
         <div className="flex flex-col items-center justify-center min-h-[85vh] p-4">

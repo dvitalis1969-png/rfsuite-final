@@ -269,7 +269,10 @@ export async function readTinySAScan(device: SerialDevice, startFreq: number, en
         
         let timeoutId: any;
         const timeoutPromise = new Promise((_, reject) => {
-            timeoutId = setTimeout(() => reject(new Error('TinySA Trace Timeout')), 30000);
+            timeoutId = setTimeout(() => {
+                console.error('TinySA Trace Timeout. Buffer content:', buffer);
+                reject(new Error('TinySA Trace Timeout'));
+            }, 60000);
         });
 
         const readPromise = (async () => {
@@ -340,8 +343,12 @@ export async function readTinySAScan(device: SerialDevice, startFreq: number, en
         if (onStatus) onStatus(`Trace complete: ${numPoints} points`);
         return scanData;
     } catch (error: any) {
-        console.error('TinySA Read Error:', error);
-        if (onStatus) onStatus(`Trace Error: ${error.message}`);
+        let message = error.message;
+        if (message.includes('The port is closed')) {
+            message = 'TinySA device disconnected. Please reconnect the device.';
+        }
+        console.error('TinySA Read Error:', message);
+        if (onStatus) onStatus(`Trace Error: ${message}`);
         return [];
     } finally {
         isBusy = false;
@@ -463,8 +470,12 @@ export async function captureTinySAScreen(device: SerialDevice, onStatus?: (stat
             fileReader.readAsDataURL(blob);
         });
     } catch (error: any) {
-        console.error('TinySA Capture Error:', error);
-        if (onStatus) onStatus(`Error: ${error.message}`);
+        let message = error.message;
+        if (message.includes('The port is closed')) {
+            message = 'TinySA device disconnected. Please reconnect the device.';
+        }
+        console.error('TinySA Capture Error:', message);
+        if (onStatus) onStatus(`Error: ${message}`);
         return null;
     } finally {
         isBusy = false;

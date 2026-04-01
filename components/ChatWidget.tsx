@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { db, auth, storage } from '../src/lib/firebase';
-import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, setDoc, deleteDoc, where, getDoc } from 'firebase/firestore';
+import { db, auth, storage, getDocWithTimeout, setDocWithTimeout, addDocWithTimeout, deleteDocWithTimeout } from '../src/lib/firebase';
+import { collection, query, orderBy, onSnapshot, serverTimestamp, doc, where } from 'firebase/firestore';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { isPro } from '../src/lib/userUtils';
 import { getUserColor, formatTimestamp } from '../src/utils/chatUtils';
@@ -109,7 +109,7 @@ const ChatWidget: React.FC<{ projectId?: string | number; unreadDMs?: Record<str
     if (chatMode === 'dm' && selectedDmUser && auth.currentUser) {
       const unreadRef = doc(db, 'users', auth.currentUser.uid, 'unread_dms', selectedDmUser.id);
       console.log("ChatWidget: Deleting unread status for:", selectedDmUser.id);
-      deleteDoc(unreadRef).catch(err => console.error("ChatWidget: Error deleting unread status:", err));
+      deleteDocWithTimeout(unreadRef).catch(err => console.error("ChatWidget: Error deleting unread status:", err));
     }
 
     const q = query(
@@ -126,7 +126,7 @@ const ChatWidget: React.FC<{ projectId?: string | number; unreadDMs?: Record<str
         const lastMsg = msgs[msgs.length - 1];
         if (lastMsg && lastMsg.userId !== auth.currentUser.uid) {
           const unreadRef = doc(db, 'users', auth.currentUser.uid, 'unread_dms', selectedDmUser.id);
-          deleteDoc(unreadRef).catch(console.error);
+          deleteDocWithTimeout(unreadRef).catch(console.error);
         }
       }
     }, (err) => {
@@ -206,14 +206,14 @@ const ChatWidget: React.FC<{ projectId?: string | number; unreadDMs?: Record<str
 
     // Set typing status
     const typingRef = doc(db, 'messages', activeProjectId, 'typing', auth.currentUser.uid);
-    setDoc(typingRef, { userName: auth.currentUser.displayName || 'Anonymous' });
+    setDocWithTimeout(typingRef, { userName: auth.currentUser.displayName || 'Anonymous' });
 
     // Clear previous timeout
     if (typingTimeout.current) clearTimeout(typingTimeout.current);
 
     // Set timeout to remove typing status
     typingTimeout.current = setTimeout(async () => {
-      await deleteDoc(typingRef);
+      await deleteDocWithTimeout(typingRef);
     }, 3000);
   };
 
@@ -234,7 +234,7 @@ const ChatWidget: React.FC<{ projectId?: string | number; unreadDMs?: Record<str
     const path = `messages/${activeProjectId}/chat/${editingMessageId}`;
     try {
       const msgRef = doc(db, 'messages', activeProjectId, 'chat', editingMessageId);
-      await setDoc(msgRef, { text: editMessageText, editedAt: serverTimestamp() }, { merge: true });
+      await setDocWithTimeout(msgRef, { text: editMessageText, editedAt: serverTimestamp() }, { merge: true });
       setEditingMessageId(null);
       setEditMessageText('');
     } catch (err) {
@@ -245,7 +245,7 @@ const ChatWidget: React.FC<{ projectId?: string | number; unreadDMs?: Record<str
   const deleteMessage = async (id: string) => {
     const path = `messages/${activeProjectId}/chat/${id}`;
     try {
-      await deleteDoc(doc(db, 'messages', activeProjectId, 'chat', id));
+      await deleteDocWithTimeout(doc(db, 'messages', activeProjectId, 'chat', id));
     } catch (err) {
       handleFirestoreError(err, OperationType.DELETE, path);
     }
@@ -273,7 +273,7 @@ const ChatWidget: React.FC<{ projectId?: string | number; unreadDMs?: Record<str
           reader.onloadend = async () => {
             const base64Audio = reader.result as string;
             try {
-              await addDoc(collection(db, 'messages', activeProjectId, 'chat'), {
+              await addDocWithTimeout(collection(db, 'messages', activeProjectId, 'chat'), {
                 userId: auth.currentUser!.uid,
                 userName: auth.currentUser!.displayName || 'Anonymous',
                 isPro: isPro(user),
@@ -286,7 +286,7 @@ const ChatWidget: React.FC<{ projectId?: string | number; unreadDMs?: Record<str
 
               if (chatMode === 'dm' && selectedDmUser) {
                 const unreadRef = doc(db, 'users', selectedDmUser.id, 'unread_dms', auth.currentUser!.uid);
-                await setDoc(unreadRef, { 
+                await setDocWithTimeout(unreadRef, { 
                   hasUnread: true, 
                   timestamp: serverTimestamp() 
                 }, { merge: true }).catch(console.error);
@@ -330,7 +330,7 @@ const ChatWidget: React.FC<{ projectId?: string | number; unreadDMs?: Record<str
     // Remove typing status immediately
     if (typingTimeout.current) clearTimeout(typingTimeout.current);
     const typingRef = doc(db, 'messages', activeProjectId, 'typing', auth.currentUser.uid);
-    await deleteDoc(typingRef);
+    await deleteDocWithTimeout(typingRef);
 
     // Check for URLs to fetch link preview
     const urlRegex = /(https?:\/\/[^\s]+)/g;
@@ -381,7 +381,7 @@ const ChatWidget: React.FC<{ projectId?: string | number; unreadDMs?: Record<str
 
     try {
       console.log("Sending message to:", activeProjectId, "Data:", messageData);
-      await addDoc(collection(db, 'messages', activeProjectId, 'chat'), messageData);
+      await addDocWithTimeout(collection(db, 'messages', activeProjectId, 'chat'), messageData);
       console.log("Message sent successfully");
     } catch (err) {
       console.error("Error sending message:", err);
@@ -392,7 +392,7 @@ const ChatWidget: React.FC<{ projectId?: string | number; unreadDMs?: Record<str
     if (chatMode === 'dm' && selectedDmUser) {
       console.log("Setting unread status for:", selectedDmUser.id, "from:", auth.currentUser.uid);
       const unreadRef = doc(db, 'users', selectedDmUser.id, 'unread_dms', auth.currentUser.uid);
-      await setDoc(unreadRef, { 
+      await setDocWithTimeout(unreadRef, { 
         hasUnread: true, 
         timestamp: serverTimestamp() 
       }, { merge: true }).catch(err => console.error("Error setting unread status:", err));
@@ -432,7 +432,7 @@ const ChatWidget: React.FC<{ projectId?: string | number; unreadDMs?: Record<str
     }
 
     try {
-      await setDoc(messageRef, { reactions: newReactions }, { merge: true });
+      await setDocWithTimeout(messageRef, { reactions: newReactions }, { merge: true });
     } catch (err) {
       console.error("Error updating reaction:", err);
     }
@@ -501,7 +501,7 @@ const ChatWidget: React.FC<{ projectId?: string | number; unreadDMs?: Record<str
       // Since we compressed the image so small, we can just save the text string 
       // directly into the Firestore database. This completely ignores CORS issues!
       
-      await addDoc(collection(db, 'messages', activeProjectId, 'chat'), {
+      await addDocWithTimeout(collection(db, 'messages', activeProjectId, 'chat'), {
         userId: auth.currentUser.uid,
         userName: auth.currentUser.displayName || 'Anonymous',
         isPro: isPro(user),
@@ -513,7 +513,7 @@ const ChatWidget: React.FC<{ projectId?: string | number; unreadDMs?: Record<str
 
       if (chatMode === 'dm' && selectedDmUser) {
         const unreadRef = doc(db, 'users', selectedDmUser.id, 'unread_dms', auth.currentUser.uid);
-        await setDoc(unreadRef, { 
+        await setDocWithTimeout(unreadRef, { 
           hasUnread: true, 
           timestamp: serverTimestamp() 
         }, { merge: true }).catch(console.error);
@@ -532,7 +532,7 @@ const ChatWidget: React.FC<{ projectId?: string | number; unreadDMs?: Record<str
     setIsLoadingProfile(true);
     setSelectedPublicProfile(null);
     try {
-      const profileDoc = await getDoc(doc(db, 'public_profiles', user.id));
+      const profileDoc = await getDocWithTimeout(doc(db, 'public_profiles', user.id));
       if (profileDoc.exists()) {
         setSelectedPublicProfile(profileDoc.data());
       }

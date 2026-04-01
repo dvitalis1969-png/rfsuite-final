@@ -6,7 +6,9 @@ import { doc, setDoc, getDoc, onSnapshot } from 'firebase/firestore';
 import { updateProfile, sendPasswordResetEmail } from 'firebase/auth';
 import { handleFirestoreError, OperationType } from '../src/utils/firestoreErrorHandler';
 import { getUserProjectsFromCloud, deleteProjectFromCloud } from '../services/cloudDbService';
+import { isPro } from '../src/lib/userUtils';
 import ContactForm from './ContactForm';
+import { ShieldAlert, Loader2 } from 'lucide-react';
 
 interface AccountDashboardProps {
     user: any;
@@ -14,17 +16,16 @@ interface AccountDashboardProps {
     onLogout: () => void;
     onUpgrade: (tier: string) => void;
     onLoadProject?: (project: any) => void;
-    onRefreshUser?: () => void;
 }
 
-const AccountDashboard: React.FC<AccountDashboardProps> = ({ user, onClose, onLogout, onUpgrade, onLoadProject, onRefreshUser }) => {
+const AccountDashboard: React.FC<AccountDashboardProps> = ({ user, onClose, onLogout, onUpgrade, onLoadProject }) => {
     const [activeTab, setActiveTab] = useState<'profile' | 'billing' | 'security' | 'projects' | 'contact'>('profile');
     const [isLoading, setIsLoading] = useState(false);
     const [lastError, setLastError] = useState<string | null>(null);
     const [configStatus, setConfigStatus] = useState<{ stripe: boolean; firebase: boolean; stripeMode?: string; stripePrefix?: string }>({ stripe: false, firebase: false });
     const [cloudProjects, setCloudProjects] = useState<any[]>([]);
     const [isFetchingProjects, setIsFetchingProjects] = useState(false);
-    const [currentUser, setCurrentUser] = useState(user);
+    const currentUser = user;
     const [displayName, setDisplayName] = useState(currentUser?.name || '');
     const [title, setTitle] = useState(currentUser?.title || '');
     const [location, setLocation] = useState(currentUser?.location || '');
@@ -83,7 +84,6 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({ user, onClose, onLo
 
             console.log("Firestore save successful");
             
-            setCurrentUser({ ...currentUser, ...profileData });
             toast.success('Profile updated successfully!');
         } catch (error: any) {
             console.error("Error updating profile:", error);
@@ -93,69 +93,7 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({ user, onClose, onLo
         }
     };
 
-    const fetchLatestUser = async () => {
-        if (!user?.id) return;
-        try {
-            const userDoc = await getDoc(doc(db, 'users', user.id));
-            if (userDoc.exists()) {
-                const data = userDoc.data();
-                setCurrentUser({
-                    ...user,
-                    name: data.name || user.name,
-                    title: data.title || user.title,
-                    location: data.location || user.location,
-                    currentTour: data.currentTour || user.currentTour,
-                    specialties: data.specialties || user.specialties,
-                    gearInventory: data.gearInventory || user.gearInventory,
-                    availableForWork: data.availableForWork !== undefined ? data.availableForWork : user.availableForWork,
-                    subscription: data.subscription || 'none',
-                    subscriptionStatus: data.subscriptionStatus || 'none',
-                    stripeCustomerId: data.stripeCustomerId || null
-                });
-            }
-        } catch (err) {
-            console.error("Error fetching latest user data:", err);
-        }
-    };
-
-    React.useEffect(() => {
-        if (!user?.id) return;
-
-        let unsubscribe: () => void;
-        
-        const setupListener = () => {
-            const path = `users/${user.id}`;
-            unsubscribe = onSnapshot(doc(db, 'users', user.id), (docSnapshot) => {
-                if (docSnapshot.exists()) {
-                    const data = docSnapshot.data();
-                    setCurrentUser(prev => ({
-                        ...prev,
-                        ...user,
-                        name: data.name || user.name,
-                        title: data.title || user.title,
-                        location: data.location || user.location,
-                        currentTour: data.currentTour || user.currentTour,
-                        specialties: data.specialties || user.specialties,
-                        gearInventory: data.gearInventory || user.gearInventory,
-                        availableForWork: data.availableForWork !== undefined ? data.availableForWork : user.availableForWork,
-                        subscription: data.subscription || 'none',
-                        subscriptionStatus: data.subscriptionStatus || 'none',
-                        stripeCustomerId: data.stripeCustomerId || null
-                    }));
-                    if (onRefreshUser) onRefreshUser();
-                }
-            }, (error) => {
-                console.error("Error listening to user data:", error);
-                handleFirestoreError(error, OperationType.GET, path);
-            });
-        };
-
-        setupListener();
-
-        return () => {
-            if (unsubscribe) unsubscribe();
-        };
-    }, [user?.id]);
+    // Sync currentUser with user prop from App.tsx
 
     React.useEffect(() => {
         // Check if config is available (via a health check or similar)
@@ -226,7 +164,7 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({ user, onClose, onLo
     // Use relative path for API calls - this works on both localhost and Render automatically
     const API_BASE = ''; 
 
-    const handleSubscribe = async (priceId: string) => {
+    const handleSubscribe = async (priceId: string, tierName: string) => {
         const targetUrl = `${API_BASE}/api/create-checkout-session`;
         try {
             setIsLoading(true);
@@ -242,6 +180,7 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({ user, onClose, onLo
                     userId: currentUser.id,
                     email: currentUser.email,
                     returnUrl: API_BASE || window.location.origin, // Ensure return URL points to the backend server
+                    tierName,
                 }),
             });
             
@@ -393,17 +332,6 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({ user, onClose, onLo
                                     <div className="flex-grow">
                                         <div className="flex items-center justify-between">
                                             <h4 className="text-xl font-black text-white uppercase tracking-wider">{currentUser?.name || 'User'}</h4>
-                                            <div className="flex items-center space-x-3">
-                                                <button 
-                                                    onClick={() => {
-                                                        fetchLatestUser();
-                                                        if (onRefreshUser) onRefreshUser();
-                                                    }}
-                                                    className="text-[9px] font-black text-indigo-400 hover:text-indigo-300 uppercase tracking-widest transition-all"
-                                                >
-                                                    Refresh Status
-                                                </button>
-                                            </div>
                                         </div>
                                         <p className="text-slate-500 text-sm font-medium">{currentUser?.email}</p>
                                         <div className="mt-4 flex items-center gap-2">
@@ -564,7 +492,7 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({ user, onClose, onLo
                                 </div>
                             )}
 
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
                                 {tiers.map(tier => (
                                     <div key={tier.id} className="p-6 bg-slate-950 border border-white/5 rounded-3xl flex flex-col h-full hover:border-indigo-500/30 transition-all group">
                                         <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-slate-400 mb-4 group-hover:bg-indigo-600 group-hover:text-white transition-all">
@@ -574,7 +502,7 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({ user, onClose, onLo
                                         <p className="text-2xl font-black text-white mb-4">{tier.price}</p>
                                         <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-6 flex-grow">{tier.desc}</p>
                                         <button 
-                                            onClick={() => handleSubscribe(tier.id)}
+                                            onClick={() => handleSubscribe(tier.id, tier.name)}
                                             disabled={isLoading}
                                             className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-black uppercase tracking-widest text-[9px] rounded-xl transition-all"
                                         >
@@ -582,6 +510,110 @@ const AccountDashboard: React.FC<AccountDashboardProps> = ({ user, onClose, onLo
                                         </button>
                                     </div>
                                 ))}
+                            </div>
+
+                            {/* Debug Section - Only visible in development or for admins */}
+                            <div className="bg-amber-500/5 rounded-3xl border border-amber-500/20 overflow-hidden">
+                                <div className="p-4 bg-amber-500/10 border-b border-amber-500/10 flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <ShieldAlert className="w-4 h-4 text-amber-500" />
+                                        <h3 className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Debug Information</h3>
+                                    </div>
+                                    <span className="text-[8px] font-black text-amber-500/50 bg-amber-500/10 px-2 py-0.5 rounded uppercase tracking-tighter">Diagnostic Mode</span>
+                                </div>
+                                <div className="p-6 space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="space-y-2">
+                                            <p className="text-[10px] font-black text-amber-500/70 uppercase tracking-widest">Backend Configuration</p>
+                                            <div className="bg-black/40 p-4 rounded-2xl border border-white/5 font-mono text-[10px] space-y-1">
+                                                <div className="flex justify-between">
+                                                    <span className="text-slate-500">Stripe Config:</span>
+                                                    <span className={configStatus.stripe ? 'text-emerald-400' : 'text-rose-400'}>{configStatus.stripe ? '✅ CONFIGURED' : '❌ MISSING'}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-slate-500">Firebase Admin:</span>
+                                                    <span className={configStatus.firebase ? 'text-emerald-400' : 'text-rose-400'}>{configStatus.firebase ? '✅ CONFIGURED' : '❌ MISSING'}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-slate-500">Stripe Mode:</span>
+                                                    <span className="text-amber-400 uppercase">{configStatus.stripeMode || 'UNKNOWN'}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <p className="text-[10px] font-black text-amber-500/70 uppercase tracking-widest">User Document State</p>
+                                            <div className="bg-black/40 p-4 rounded-2xl border border-white/5 font-mono text-[10px] space-y-1">
+                                                <div className="flex justify-between">
+                                                    <span className="text-slate-500">Status:</span>
+                                                    <span className="text-white">{user?.subscriptionStatus || 'undefined'}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-slate-500">Plan:</span>
+                                                    <span className="text-white">{user?.subscription || 'undefined'}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-slate-500">isPro Result:</span>
+                                                    <span className={isPro(user) ? 'text-emerald-400' : 'text-rose-400'}>{isPro(user) ? 'TRUE' : 'FALSE'}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="p-3 bg-black/40 rounded-xl border border-white/5 font-mono text-[9px] text-slate-400 break-all">
+                                        UID: {user?.id}
+                                    </div>
+                                    <div className="flex gap-4">
+                                        <button 
+                                            onClick={() => {
+                                                console.log("Full User Object:", user);
+                                                toast.info("Full user object logged to console");
+                                            }}
+                                            className="text-[9px] font-black uppercase tracking-widest text-amber-500 hover:text-amber-400 transition-colors"
+                                        >
+                                            Log Full User Object
+                                        </button>
+                                        <button 
+                                            onClick={async () => {
+                                                try {
+                                                    const response = await fetch(`${API_BASE}/api/health`);
+                                                    const data = await response.json();
+                                                    console.log("Health Check Result:", data);
+                                                    toast.info("Health check result logged to console");
+                                                } catch (e) {
+                                                    console.error("Health check failed:", e);
+                                                    toast.error("Health check failed");
+                                                }
+                                            }}
+                                            className="text-[9px] font-black uppercase tracking-widest text-amber-500 hover:text-amber-400 transition-colors"
+                                        >
+                                            Run Health Check
+                                        </button>
+                                        <button 
+                                            onClick={async () => {
+                                                if (!user?.id) return toast.error("No user ID found");
+                                                try {
+                                                    const response = await fetch(`${API_BASE}/api/test-checkout-success`, {
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify({ userId: user.id })
+                                                    });
+                                                    const data = await response.json();
+                                                    if (data.success) {
+                                                        toast.success("Mock update successful! Refreshing...");
+                                                        setTimeout(() => window.location.reload(), 2000);
+                                                    } else {
+                                                        throw new Error(data.error || "Unknown error");
+                                                    }
+                                                } catch (e: any) {
+                                                    console.error("Mock update failed:", e);
+                                                    toast.error(`Mock update failed: ${e.message}`);
+                                                }
+                                            }}
+                                            className="text-[9px] font-black uppercase tracking-widest text-rose-500 hover:text-rose-400 transition-colors"
+                                        >
+                                            Test Mock Success
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     )}

@@ -1,17 +1,12 @@
 
-import { db, auth } from '../src/lib/firebase';
+import { db, auth, getDocWithTimeout, getDocsWithTimeout, addDocWithTimeout, updateDocWithTimeout, deleteDocWithTimeout } from '../src/lib/firebase';
 import { 
   collection, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
   doc, 
   query, 
   where, 
-  getDocs, 
   orderBy, 
-  Timestamp,
-  getDoc
+  Timestamp
 } from 'firebase/firestore';
 import { Project, AppState } from '../types';
 
@@ -82,7 +77,7 @@ export const saveProjectToCloud = async (userId: string, project: Omit<Project, 
     // Update existing cloud project
     const docRef = doc(db, PROJECTS_COLLECTION, project.id);
     try {
-      await updateDoc(docRef, projectData);
+      await updateDocWithTimeout(docRef, projectData);
       return project.id;
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `${PROJECTS_COLLECTION}/${project.id}`);
@@ -91,7 +86,7 @@ export const saveProjectToCloud = async (userId: string, project: Omit<Project, 
   } else {
     // Create new cloud project
     try {
-      const docRef = await addDoc(collection(db, PROJECTS_COLLECTION), projectData);
+      const docRef = await addDocWithTimeout(collection(db, PROJECTS_COLLECTION), projectData);
       return docRef.id;
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, PROJECTS_COLLECTION);
@@ -109,7 +104,7 @@ export const getUserProjectsFromCloud = async (userId: string): Promise<any[]> =
   );
 
   try {
-    const querySnapshot = await getDocs(q);
+    const querySnapshot = await getDocsWithTimeout(q);
     const projects = querySnapshot.docs.map(doc => {
       const data = doc.data();
       return {
@@ -131,7 +126,7 @@ export const getUserProjectsFromCloud = async (userId: string): Promise<any[]> =
 export const deleteProjectFromCloud = async (projectId: string): Promise<void> => {
   if (!db) throw new Error('Firestore not initialized');
   try {
-    await deleteDoc(doc(db, PROJECTS_COLLECTION, projectId));
+    await deleteDocWithTimeout(doc(db, PROJECTS_COLLECTION, projectId));
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, `${PROJECTS_COLLECTION}/${projectId}`);
     throw error;
@@ -142,7 +137,7 @@ export const getProjectFromCloud = async (projectId: string): Promise<any> => {
     if (!db) throw new Error('Firestore not initialized');
     const docRef = doc(db, PROJECTS_COLLECTION, projectId);
     try {
-      const docSnap = await getDoc(docRef);
+      const docSnap = await getDocWithTimeout(docRef);
       if (docSnap.exists()) {
           const data = docSnap.data();
           return {

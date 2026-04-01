@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { createPortal } from 'react-dom';
 import { motion } from 'motion/react';
-import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, setDoc, updateDoc, arrayUnion, arrayRemove, getDocs, where, deleteDoc } from 'firebase/firestore';
-import { db, auth } from '../src/lib/firebase';
+import { collection, query, orderBy, onSnapshot, serverTimestamp, doc, arrayUnion, arrayRemove, where } from 'firebase/firestore';
+import { db, auth, getDocsWithTimeout, updateDocWithTimeout, addDocWithTimeout, deleteDocWithTimeout } from '../src/lib/firebase';
 import { isPro } from '../src/lib/userUtils';
 import { User } from '../types';
 import { handleFirestoreError, OperationType } from '../src/utils/firestoreErrorHandler';
@@ -90,7 +90,7 @@ export const ActivityFeed: React.FC<{ user: User | null; theme?: 'light' | 'dark
             // Removed orderBy('timestamp', 'desc') to avoid requiring a composite index in Firestore.
             // We will sort the results client-side instead.
             const q = query(collection(db, 'plots'), where('userId', '==', user.id));
-            const snapshot = await getDocs(q);
+            const snapshot = await getDocsWithTimeout(q);
             const plotsData: Plot[] = [];
             snapshot.forEach((doc) => {
                 plotsData.push({ id: doc.id, ...doc.data() } as Plot);
@@ -200,7 +200,7 @@ export const ActivityFeed: React.FC<{ user: User | null; theme?: 'light' | 'dark
                 };
             }
 
-            await addDoc(collection(db, 'feed_posts'), postData);
+            await addDocWithTimeout(collection(db, 'feed_posts'), postData);
             
             setNewPostContent('');
             setAttachedImage(null);
@@ -222,9 +222,9 @@ export const ActivityFeed: React.FC<{ user: User | null; theme?: 'light' | 'dark
         try {
             const postRef = doc(db, 'feed_posts', postId);
             if (likes.includes(user.id)) {
-                await updateDoc(postRef, { likes: arrayRemove(user.id) });
+                await updateDocWithTimeout(postRef, { likes: arrayRemove(user.id) });
             } else {
-                await updateDoc(postRef, { likes: arrayUnion(user.id) });
+                await updateDocWithTimeout(postRef, { likes: arrayUnion(user.id) });
             }
         } catch (err) {
             try {
@@ -248,7 +248,7 @@ export const ActivityFeed: React.FC<{ user: User | null; theme?: 'light' | 'dark
                 content: commentContent[postId],
                 createdAt: new Date()
             };
-            await updateDoc(postRef, { comments: arrayUnion(newComment) });
+            await updateDocWithTimeout(postRef, { comments: arrayUnion(newComment) });
             setCommentContent(prev => ({ ...prev, [postId]: '' }));
         } catch (err) {
             try {
@@ -262,7 +262,7 @@ export const ActivityFeed: React.FC<{ user: User | null; theme?: 'light' | 'dark
     const handleDeletePost = async () => {
         if (!user || !postToDelete) return;
         try {
-            await deleteDoc(doc(db, 'feed_posts', postToDelete));
+            await deleteDocWithTimeout(doc(db, 'feed_posts', postToDelete));
             setPostToDelete(null);
         } catch (err) {
             console.error("Error deleting post:", err);
@@ -284,7 +284,7 @@ export const ActivityFeed: React.FC<{ user: User | null; theme?: 'light' | 'dark
         setIsUpdatingPost(true);
         try {
             const postRef = doc(db, 'feed_posts', postId);
-            await updateDoc(postRef, {
+            await updateDocWithTimeout(postRef, {
                 content: editingContent,
                 updatedAt: serverTimestamp()
             });

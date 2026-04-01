@@ -82,16 +82,28 @@ const LiveScanAnalyzer: React.FC<LiveScanAnalyzerProps> = ({
 
     const confirmShareScan = async () => {
         if (!canvasRef.current || !auth.currentUser) return;
+        
+        // Capture all data needed for the save immediately before closing modal
+        const imageData = canvasRef.current.toDataURL('image/jpeg', 0.8);
+        const meta = { ...shareMeta };
+        const min = displayMinFreq;
+        const max = displayMaxFreq;
+        const currentScanData = scanData ? [...scanData] : null;
+
+        // Close modal immediately as requested by user
+        setShowShareModal(false);
+        setShareMeta({ location: '', festival: '', stage: '', notes: '' });
+        
         setIsSharing(true);
+        const toastId = toast.loading('Sharing scan to gallery...');
+
         try {
-            const imageData = canvasRef.current.toDataURL('image/jpeg', 0.8);
-            
             // Downsample scan data for storage to avoid exceeding Firestore limits
             let rawScanData = null;
-            if (scanData && scanData.length > 0) {
+            if (currentScanData && currentScanData.length > 0) {
                 // Keep max 500 points to stay well under 1MB limit
-                const step = Math.max(1, Math.floor(scanData.length / 500));
-                const downsampled = scanData.filter((_, i) => i % step === 0);
+                const step = Math.max(1, Math.floor(currentScanData.length / 500));
+                const downsampled = currentScanData.filter((_, i) => i % step === 0);
                 rawScanData = JSON.stringify(downsampled);
             }
 
@@ -101,19 +113,20 @@ const LiveScanAnalyzer: React.FC<LiveScanAnalyzerProps> = ({
                 timestamp: Date.now(),
                 projectId: 'global',
                 imageData,
-                description: `Live Scan Capture (${displayMinFreq.toFixed(1)} - ${displayMaxFreq.toFixed(1)} MHz)`,
-                location: shareMeta.location,
-                festival: shareMeta.festival,
-                stage: shareMeta.stage,
-                notes: shareMeta.notes,
+                description: `Live Scan Capture (${min.toFixed(1)} - ${max.toFixed(1)} MHz)`,
+                location: meta.location,
+                festival: meta.festival,
+                stage: meta.stage,
+                notes: meta.notes,
                 comments: [],
                 ...(rawScanData ? { rawScanData } : {})
             });
+            
+            toast.success('Scan shared to Plot Gallery successfully!', { id: toastId });
             addLog('Scan shared to Plot Gallery successfully!');
-            setShowShareModal(false);
-            setShareMeta({ location: '', festival: '', stage: '', notes: '' });
         } catch (error: any) {
             console.error('Error sharing scan:', error);
+            toast.error(`Failed to share scan: ${error.message}`, { id: toastId });
             addLog(`Failed to share scan: ${error.message}`);
         } finally {
             setIsSharing(false);

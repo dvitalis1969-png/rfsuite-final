@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, DocumentReference, DocumentSnapshot, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, CollectionReference } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
 // Import the Firebase configuration optionally to avoid build errors if missing
@@ -37,5 +37,59 @@ console.log("✅ Firebase initialized with config:", {
   projectId: firebaseConfig.projectId,
   databaseId: firebaseConfig.firestoreDatabaseId || '(default)'
 });
+
+export const getDocWithTimeout = async (docRef: DocumentReference, timeoutMs: number = 5000): Promise<DocumentSnapshot> => {
+  return Promise.race([
+    getDoc(docRef),
+    new Promise<DocumentSnapshot>((_, reject) => 
+      setTimeout(() => reject(new Error('client is offline (timeout)')), timeoutMs)
+    )
+  ]);
+};
+
+export const getDocsWithTimeout = async (query: any, timeoutMs: number = 5000): Promise<any> => {
+  return Promise.race([
+    getDocs(query),
+    new Promise<any>((_, reject) => 
+      setTimeout(() => reject(new Error('client is offline (timeout)')), timeoutMs)
+    )
+  ]);
+};
+
+export const setDocWithTimeout = async (docRef: DocumentReference, data: any, options?: any, timeoutMs: number = 5000): Promise<void> => {
+  return Promise.race([
+    options ? setDoc(docRef, data, options) : setDoc(docRef, data),
+    new Promise<void>((_, reject) => 
+      setTimeout(() => reject(new Error('client is offline (timeout)')), timeoutMs)
+    )
+  ]);
+};
+
+export const addDocWithTimeout = async (collectionRef: CollectionReference, data: any, timeoutMs: number = 5000): Promise<DocumentReference> => {
+  return Promise.race([
+    addDoc(collectionRef, data),
+    new Promise<DocumentReference>((_, reject) => 
+      setTimeout(() => reject(new Error('client is offline (timeout)')), timeoutMs)
+    )
+  ]);
+};
+
+export const updateDocWithTimeout = async (docRef: DocumentReference, data: any, timeoutMs: number = 5000): Promise<void> => {
+  return Promise.race([
+    updateDoc(docRef, data),
+    new Promise<void>((_, reject) => 
+      setTimeout(() => reject(new Error('client is offline (timeout)')), timeoutMs)
+    )
+  ]);
+};
+
+export const deleteDocWithTimeout = async (docRef: DocumentReference, timeoutMs: number = 5000): Promise<void> => {
+  return Promise.race([
+    deleteDoc(docRef),
+    new Promise<void>((_, reject) => 
+      setTimeout(() => reject(new Error('client is offline (timeout)')), timeoutMs)
+    )
+  ]);
+};
 
 export { auth, db, storage, googleProvider };

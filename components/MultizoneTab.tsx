@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { toast } from 'sonner';
+import { PDFDocument } from 'pdf-lib';
 import Card, { CardTitle } from './Card';
 import TvGrid from './TvGrid';
 import { Thresholds, Zone, ZoneConfig, Frequency, EquipmentProfile, CompatibilityLevel, TxType, TVChannelState, WMASState } from '../types';
@@ -118,6 +119,8 @@ const MultizoneTab: React.FC<MultizoneTabProps> = ({
     const [numZonesInput, setNumZonesInput] = useState(numZones.toString());
     const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
     const [isWwbSubmenuOpen, setIsWwbSubmenuOpen] = useState(false);
+    const [pdfTemplate, setPdfTemplate] = useState<File | null>(null);
+    const templateInputRef = useRef<HTMLInputElement>(null);
     
     // Global Distance State
     const [globalDistInput, setGlobalDistInput] = useState<string>("15");
@@ -622,10 +625,11 @@ const MultizoneTab: React.FC<MultizoneTabProps> = ({
         URL.revokeObjectURL(url);
     };
 
-    const handleExport = (format: 'pdf' | 'csv' | 'xls' | 'doc' | 'txt' | 'wwb') => {
+    const handleExport = (format: 'pdf' | 'csv' | 'xls' | 'doc' | 'txt' | 'wwb' | 'pdf-template', templateFile?: File) => {
         setIsExportMenuOpen(false);
         const data = tabulatedData;
         const filename = `exhibition_rf_plan_${new Date().toISOString().slice(0, 10)}`;
+        const currentTemplate = templateFile || pdfTemplate;
 
         if (format === 'wwb') {
             let content = "Frequency,Name,Type,Band,RF Profile\n";
@@ -663,24 +667,88 @@ const MultizoneTab: React.FC<MultizoneTabProps> = ({
             const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a'); a.href = url; a.download = `${filename}.doc`; a.click();
-        } else if (format === 'pdf') {
+        } else if (format === 'pdf' || format === 'pdf-template') {
             // @ts-ignore
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
-            doc.setFontSize(18);
-            doc.text("Exhibition RF Coordination Plan", 14, 20);
-            doc.setFontSize(10);
-            doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 28);
-            const tableData = data.map(row => [row.freq.toFixed(3), row.label || '—', row.id, row.zone, row.modelName]);
+            
+            if (format === 'pdf') {
+                doc.setFontSize(18);
+                doc.text("Exhibition RF Coordination Plan", 14, 20);
+                doc.setFontSize(10);
+                doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 28);
+            }
+
+            const tableData = data.map(row => [row.freq.toFixed(3), row.label || '—', row.zone, row.modelName]);
+            
             // @ts-ignore
             doc.autoTable({
-                startY: 35,
-                head: [['Frequency', 'Designation', 'ID', 'Location', 'Hardware']],
+                startY: format === 'pdf-template' ? 60 : 35,
+                margin: { 
+                    top: format === 'pdf-template' ? 60 : 20, 
+                    bottom: format === 'pdf-template' ? 50 : 20 
+                },
+                head: [['Frequency', 'Designation', 'Location', 'Hardware']],
                 body: tableData,
                 theme: 'striped',
-                headStyles: { fillColor: [79, 70, 229] }
+                headStyles: { fillColor: [79, 70, 229] },
+                columnStyles: {
+                    0: { cellWidth: 25 },
+                    1: { cellWidth: 55 },
+                    2: { cellWidth: 45 },
+                    3: { cellWidth: 'auto' }
+                }
             });
-            doc.save(`${filename}.pdf`);
+
+            if (format === 'pdf-template' && currentTemplate) {
+                const mergePdf = async () => {
+                    try {
+                        const jsPdfBytes = doc.output('arraybuffer');
+                        const templateBytes = await currentTemplate.arrayBuffer();
+                        
+                        const templateDoc = await PDFDocument.load(templateBytes);
+                        const contentDoc = await PDFDocument.load(jsPdfBytes);
+                        const mergedDoc = await PDFDocument.create();
+                        
+                        const [embeddedTemplate] = await mergedDoc.embedPdf(templateBytes, [0]);
+                        const contentIndices = contentDoc.getPageIndices();
+                        const embeddedContentPages = await mergedDoc.embedPdf(jsPdfBytes, contentIndices);
+                        
+                        for (let i = 0; i < embeddedContentPages.length; i++) {
+                            const page = mergedDoc.addPage([embeddedTemplate.width, embeddedTemplate.height]);
+                            
+                            page.drawPage(embeddedTemplate, {
+                                x: 0,
+                                y: 0,
+                                width: page.getWidth(),
+                                height: page.getHeight(),
+                            });
+                            
+                            page.drawPage(embeddedContentPages[i], {
+                                x: 0,
+                                y: 0,
+                                width: page.getWidth(),
+                                height: page.getHeight(),
+                            });
+                        }
+                        
+                        const mergedBytes = await mergedDoc.save();
+                        const blob = new Blob([mergedBytes], { type: 'application/pdf' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `${filename}_Template.pdf`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                    } catch (e) {
+                        console.error('Failed to merge PDF template:', e);
+                        toast.error('Failed to merge with the provided template. Make sure it is a valid PDF file.');
+                    }
+                };
+                mergePdf();
+            } else {
+                doc.save(`${filename}.pdf`);
+            }
         }
     };
 
@@ -1313,10 +1381,46 @@ const MultizoneTab: React.FC<MultizoneTabProps> = ({
 
                                             <button onClick={() => handleExport('pdf')} className="w-full text-left p-3 hover:bg-indigo-600 transition-colors flex items-center justify-between group">
                                                 <div className="flex flex-col">
-                                                    <span className="text-white font-bold text-[10px] uppercase tracking-wider">PDF Document</span>
+                                                    <span className="text-white font-bold text-[10px] uppercase tracking-wider">Plain PDF Document</span>
                                                 </div>
                                                 <span className="text-sm">📄</span>
                                             </button>
+                                            <button onClick={() => {
+                                                if (!pdfTemplate) {
+                                                    templateInputRef.current?.click();
+                                                } else {
+                                                    handleExport('pdf-template');
+                                                }
+                                            }} className="w-full text-left p-3 hover:bg-purple-600 transition-colors flex items-center justify-between group">
+                                                <div className="flex flex-col">
+                                                    <span className="text-white font-bold text-[10px] uppercase tracking-wider">Export to Company Template</span>
+                                                    <span className="text-[8px] text-purple-300 font-black">{pdfTemplate ? `Template: ${pdfTemplate.name} (Click to export)` : 'Requires blank PDF template upload'}</span>
+                                                </div>
+                                                <span className="text-sm">🏢</span>
+                                            </button>
+                                            {pdfTemplate && (
+                                                <button onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setPdfTemplate(null);
+                                                    if (templateInputRef.current) templateInputRef.current.value = '';
+                                                }} className="w-full text-left px-3 py-2 bg-slate-900 hover:bg-red-900/50 transition-colors flex items-center justify-between">
+                                                    <span className="text-red-400 font-bold text-[9px] uppercase tracking-wider">Clear Template</span>
+                                                    <span className="text-xs">🗑️</span>
+                                                </button>
+                                            )}
+                                            <input 
+                                                type="file" 
+                                                accept="application/pdf" 
+                                                ref={templateInputRef} 
+                                                className="hidden" 
+                                                onChange={(e) => {
+                                                    if (e.target.files && e.target.files[0]) {
+                                                        const file = e.target.files[0];
+                                                        setPdfTemplate(file);
+                                                        handleExport('pdf-template', file);
+                                                    }
+                                                }} 
+                                            />
                                             <button onClick={() => handleExport('xls')} className="w-full text-left p-3 hover:bg-emerald-600 transition-colors flex items-center justify-between group">
                                                 <div className="flex flex-col">
                                                     <span className="text-white font-bold text-[10px] uppercase tracking-wider">Excel (.XLS)</span>

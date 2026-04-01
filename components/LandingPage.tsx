@@ -196,8 +196,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
                 </AnimatePresence>
 
                 {/* Hero Section */}
-                <section className="container mx-auto px-6 pt-40 pb-32">
-                    <div className="max-w-5xl mx-auto text-center">
+                <section className="relative container mx-auto px-6 pt-40 pb-32">
+                    <div className="relative z-10 max-w-5xl mx-auto text-center">
                         <motion.div 
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -227,7 +227,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.3 }}
-                            className="flex flex-wrap justify-center gap-4"
+                            className="flex flex-wrap justify-center gap-4 mb-20"
                         >
                             <button onClick={() => onLogin()} className="px-10 py-5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-black uppercase tracking-widest text-sm shadow-[0_20px_50px_rgba(79,70,229,0.3)] transition-all transform hover:-translate-y-1">
                                 Start Coordinating

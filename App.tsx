@@ -27,15 +27,18 @@ import TourPlanningTab from './components/TourPlanningTab';
 import WMASTab from './components/WMASTab';
 import ErrorBoundary from './components/ErrorBoundary';
 import AuthModal from './components/AuthModal';
+import { PassCountdown } from './components/PassCountdown';
 import AccountDashboard from './components/AccountDashboard';
 import CommunityPanel from './components/CommunityPanel';
 import UserPresenceList from './components/UserPresenceList';
 import ProfilePopover from './components/ProfilePopover';
 import { ActivityFeed } from './components/ActivityFeed';
+import { isPro } from './src/lib/userUtils';
 
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useDebounce } from './hooks/useDebounce';
 import { toast, Toaster } from 'sonner';
+import { Check } from 'lucide-react';
 
 // RF Toolkit Component Imports
 import ProximitySimulatorTab from './components/ProximitySimulatorTab';
@@ -54,7 +57,7 @@ import AudioToneGeneratorTab from './components/AudioToneGeneratorTab';
 import * as dbService from './services/dbService';
 import { exportToJson } from './services/fileService';
 import { db, auth } from './src/lib/firebase';
-import { getDoc, doc } from 'firebase/firestore';
+import { getDoc, doc, onSnapshot } from 'firebase/firestore';
 import { saveProjectToCloud } from './services/cloudDbService';
 
 import { generateMockScanData } from './services/serialService';
@@ -142,12 +145,25 @@ const App: React.FC = () => {
     const [isDbReady, setIsDbReady] = useState(false);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isAuthLoading, setIsAuthLoading] = useState(true);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [currentProject, setCurrentProject] = useState<Project | null>(null);
     const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'no-project'>('idle');
     const [isEngineCalculating, setIsEngineCalculating] = useState(false);
     const [lastSaved, setLastSaved] = useState<Date | null>(null);
     const isProjectLoading = useRef(false);
     const isLibraryLoaded = useRef(false);
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('checkout') === 'success') {
+            setShowSuccessModal(true);
+            // Clean up URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+        } else if (params.get('checkout') === 'cancel') {
+            toast.error("Checkout was cancelled.");
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+    }, []);
 
     const [activeApp, setActiveApp] = useState<AppCategory | null>(null);
     const [activeTab, setActiveTab] = useLocalStorage<TabID>('app_activeTab', 'analyzer');
@@ -635,21 +651,7 @@ const App: React.FC = () => {
     const handleLogin = (userData: any) => { 
         setUser(userData);
         setIsAuthenticated(true); 
-    };
-    const refreshUser = async () => {
-        if (!user) return;
-        // db and getDoc, doc are imported statically
-        const userDoc = await getDoc(doc(db, 'users', user.id));
-        if (userDoc.exists()) {
-            const data = userDoc.data();
-            setUser({
-                ...user,
-                subscription: data.subscription || 'none',
-                subscriptionStatus: data.subscriptionStatus || 'none',
-                stripeCustomerId: data.stripeCustomerId || null,
-                role: data.role || 'user'
-            });
-        }
+        setIsAuthModalOpen(false);
     };
     const handleLogout = async () => { 
         try {
@@ -667,6 +669,14 @@ const App: React.FC = () => {
         loadAppState(initialState);
         dbService.setLastProjectId('');
     };
+
+    useEffect(() => {
+        if (user) {
+            console.log(`[User State Update] User: ${user.email}, Status: ${user.subscriptionStatus}, Role: ${user.role}`);
+        } else {
+            console.log(`[User State Update] User is null`);
+        }
+    }, [user]);
 
     useEffect(() => {
         let unsubscribe: () => void;
@@ -689,38 +699,85 @@ const App: React.FC = () => {
 
             unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
                 clearTimeout(authTimeout);
+                console.log(`[Auth State Change] firebaseUser: ${firebaseUser?.email || 'null'}`);
+                
+                // Cleanup previous user listener if it exists
+                if ((window as any)._userUnsubscribe) {
+                    (window as any)._userUnsubscribe();
+                    (window as any)._userUnsubscribe = null;
+                }
+
                 if (firebaseUser) {
-                    let subscription = 'none';
-                    let subscriptionStatus = 'none';
-                    let stripeCustomerId = null;
-                    let role = 'user';
+                    console.log(`[Auth State Change] User UID: ${firebaseUser.uid}`);
+                    // Set up real-time listener for user data
+                    const userDocRef = doc(db, 'users', firebaseUser.uid);
+                    
+                    // Initial fetch to get the app started quickly
                     try {
-                        const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+                        const userDoc = await getDoc(userDocRef);
                         if (userDoc.exists()) {
                             const data = userDoc.data();
-                            subscriptionStatus = data.subscriptionStatus || 'none';
-                            subscription = data.subscription || subscriptionStatus;
-                            stripeCustomerId = data.stripeCustomerId || null;
-                            role = data.role || 'user';
+                            setUser({
+                                id: firebaseUser.uid,
+                                email: firebaseUser.email,
+                                name: firebaseUser.displayName || firebaseUser.email?.split('@')[0],
+                                subscription: data.subscription || 'none',
+                                subscriptionStatus: data.subscriptionStatus || 'none',
+                                stripeCustomerId: data.stripeCustomerId || null,
+                                role: data.role || 'user',
+                                ...data // Include all other profile fields
+                            });
+                        } else {
+                            // New user or missing doc
+                            setUser({
+                                id: firebaseUser.uid,
+                                email: firebaseUser.email,
+                                name: firebaseUser.displayName || firebaseUser.email?.split('@')[0],
+                                subscription: 'none',
+                                subscriptionStatus: 'none',
+                                role: 'user'
+                            });
                         }
                     } catch (err) {
-                        console.error("Error fetching user data:", err);
+                        console.error("Initial user fetch error:", err);
                     }
 
-                    setIsAuthenticated(true);
-                    setUser({
-                        id: firebaseUser.uid,
-                        email: firebaseUser.email,
-                        name: firebaseUser.displayName || firebaseUser.email?.split('@')[0],
-                        subscription: subscription,
-                        subscriptionStatus: subscriptionStatus,
-                        stripeCustomerId: stripeCustomerId,
-                        role: role
+                    // Real-time listener for updates (like subscription changes)
+                    const userUnsubscribe = onSnapshot(userDocRef, (docSnapshot) => {
+                        if (docSnapshot.exists()) {
+                            const data = docSnapshot.data();
+                            console.log(`[Firestore User Update] Data for ${firebaseUser.email}:`, data);
+                            const updatedUser = {
+                                id: firebaseUser.uid,
+                                email: firebaseUser.email,
+                                name: data.name || firebaseUser.displayName || firebaseUser.email?.split('@')[0],
+                                subscription: data.subscription || 'none',
+                                subscriptionStatus: data.subscriptionStatus || 'none',
+                                stripeCustomerId: data.stripeCustomerId || null,
+                                role: data.role || 'user',
+                                ...data
+                            };
+                            console.log(`[Firestore User Update] Final User Object:`, updatedUser);
+                            setUser(updatedUser);
+                        } else {
+                            console.log(`[Firestore User Update] Document DOES NOT EXIST in Firestore for UID: ${firebaseUser.uid} (${firebaseUser.email})`);
+                        }
+                    }, (err) => {
+                        console.error("User document listener error:", err);
                     });
+
+                    setIsAuthenticated(true);
+                    
+                    // Store the user unsubscribe function to call it when auth state changes or unmounts
+                    (window as any)._userUnsubscribe = userUnsubscribe;
                 } else {
+                    if ((window as any)._userUnsubscribe) {
+                        (window as any)._userUnsubscribe();
+                        (window as any)._userUnsubscribe = null;
+                    }
                     setIsAuthenticated(false);
                     setUser(null);
-                    setProjectDashboardOpen(false); // Ensure dashboard is closed
+                    setProjectDashboardOpen(false);
                     setIsAccountDashboardOpen(false);
                 }
                 setIsAuthLoading(false);
@@ -736,6 +793,10 @@ const App: React.FC = () => {
         initAuth();
         return () => {
             if (unsubscribe) unsubscribe();
+            if ((window as any)._userUnsubscribe) {
+                (window as any)._userUnsubscribe();
+                (window as any)._userUnsubscribe = null;
+            }
         };
     }, []);
 
@@ -746,6 +807,17 @@ const App: React.FC = () => {
             loadAppState(initialState);
         }
     }, [user, currentProject]);
+
+    useEffect(() => {
+        if (user) {
+            console.log("[App State] User object updated:", {
+                email: user.email,
+                subscription: user.subscription,
+                status: user.subscriptionStatus,
+                isPro: isPro(user)
+            });
+        }
+    }, [user]);
 
     if (dbError) return (
         <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white p-4 text-center">
@@ -974,7 +1046,6 @@ const App: React.FC = () => {
                     }
                     setIsAccountDashboardOpen(false);
                 }}
-                onRefreshUser={refreshUser}
             />}
             
             <div className="fixed bottom-0 left-0 right-0 h-8 bg-slate-900/95 backdrop-blur-md border-t border-white/5 z-50 flex items-center justify-between px-4 text-[10px] font-medium tracking-wider uppercase">
@@ -1003,6 +1074,29 @@ const App: React.FC = () => {
                     </div>
                 </div>
             </div>
+            
+            {showSuccessModal && (
+                <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[100] flex items-center justify-center p-4">
+                    <div className="bg-slate-800 border border-emerald-500/30 rounded-xl shadow-2xl w-full max-w-md p-8 text-center text-white">
+                        <div className="w-16 h-16 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <Check className="w-8 h-8" />
+                        </div>
+                        <h2 className="text-2xl font-black uppercase tracking-tight mb-4">Payment Successful!</h2>
+                        <p className="text-slate-300 mb-8">
+                            Your account has been upgraded. You now have full access to all Pro modules. 
+                            A countdown timer has been added to the bottom right of your screen to track your remaining time.
+                        </p>
+                        <button 
+                            onClick={() => setShowSuccessModal(false)}
+                            className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold uppercase tracking-widest transition-colors"
+                        >
+                            Start Using Pro
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            <PassCountdown user={user} />
             <Toaster theme="dark" position="bottom-right" />
         </div>
     );

@@ -2,8 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Minus, Maximize2, GripVertical, MessageCircle } from 'lucide-react';
 import ChatWidget from './ChatWidget';
 import PresenceIndicator from './PresenceIndicator';
-import { collection, query, onSnapshot, doc, setDoc, serverTimestamp, deleteDoc, getDoc } from 'firebase/firestore';
-import { db, auth } from '../src/lib/firebase';
+import { collection, query, onSnapshot, doc, serverTimestamp, deleteDoc } from 'firebase/firestore';
+import { db, auth, getDocWithTimeout, setDocWithTimeout } from '../src/lib/firebase';
 import { handleFirestoreError, OperationType } from '../src/utils/firestoreErrorHandler';
 
 import { User } from '../types';
@@ -28,7 +28,7 @@ const CommunityPanel: React.FC<{ projectId?: string | number; user: User | null;
     if (totalUnread > 0) {
       const firstUnreadId = Object.keys(unreadDMs)[0];
       try {
-        const userDoc = await getDoc(doc(db, 'users', firstUnreadId));
+        const userDoc = await getDocWithTimeout(doc(db, 'users', firstUnreadId));
         const userName = userDoc.exists() ? userDoc.data().name || 'Unknown User' : 'Unknown User';
         onSelectDmUser?.({ id: firstUnreadId, name: userName });
       } catch (err) {
@@ -114,7 +114,7 @@ const CommunityPanel: React.FC<{ projectId?: string | number; user: User | null;
       try {
         // Global presence
         const globalRef = doc(db, 'presence', 'global', 'users', uid);
-        await setDoc(globalRef, { 
+        await setDocWithTimeout(globalRef, { 
           name,
           lastSeen: serverTimestamp(),
           status: 'online',
@@ -123,7 +123,7 @@ const CommunityPanel: React.FC<{ projectId?: string | number; user: User | null;
 
         // Project presence
         const projectRef = doc(db, 'presence', String(projectId), 'users', uid);
-        await setDoc(projectRef, {
+        await setDocWithTimeout(projectRef, {
           userId: uid,
           userName: name,
           lastSeen: serverTimestamp(),
@@ -146,8 +146,8 @@ const CommunityPanel: React.FC<{ projectId?: string | number; user: User | null;
       if (!auth.currentUser) return;
       const globalRef = doc(db, 'presence', 'global', 'users', uid);
       const projectRef = doc(db, 'presence', String(projectId), 'users', uid);
-      setDoc(globalRef, { status: 'offline', lastSeen: serverTimestamp() }, { merge: true }).catch(console.error);
-      setDoc(projectRef, { status: 'offline', lastSeen: serverTimestamp() }, { merge: true }).catch(console.error);
+      setDocWithTimeout(globalRef, { status: 'offline', lastSeen: serverTimestamp() }, { merge: true }).catch(console.error);
+      setDocWithTimeout(projectRef, { status: 'offline', lastSeen: serverTimestamp() }, { merge: true }).catch(console.error);
     };
   }, [projectId, auth.currentUser?.uid, status]);
 
