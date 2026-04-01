@@ -180,9 +180,6 @@ async function startServer() {
     initFirebaseAdmin();
     const stripe = getStripe();
     const sig = req.headers['stripe-signature'];
-    console.log(`[Webhook Debug] Signature: ${sig}`);
-    console.log(`[Webhook Debug] Body type: ${typeof req.body}`);
-    console.log(`[Webhook Debug] Is Buffer: ${Buffer.isBuffer(req.body)}`);
     
     let endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -216,7 +213,6 @@ async function startServer() {
       if (event.type === 'checkout.session.completed') {
         const session = event.data.object as Stripe.Checkout.Session;
         const userId = session.client_reference_id;
-        console.log(`[Webhook] 💰 checkout.session.completed received for userId: ${userId}, session: ${session.id}`);
         if (userId) {
           const updateData: any = { 
             subscriptionStatus: 'active',
@@ -231,7 +227,6 @@ async function startServer() {
             if (lineItem?.price?.product) {
               const product = lineItem.price.product as Stripe.Product;
               updateData.subscription = product.name;
-              console.log(`[Webhook] Plan identified: ${product.name}`);
             }
           } catch (e) {
             console.error("Error fetching product name in webhook:", e);
@@ -251,18 +246,14 @@ async function startServer() {
             }
           }
 
-          console.log(`[Webhook] 📝 Updating Firestore for user ${userId} with:`, updateData);
           await db.collection('users').doc(userId).set(updateData, { merge: true });
-          console.log(`[Webhook] ✅ Firestore update successful for ${userId}`);
         }
       } else if (event.type === 'customer.subscription.deleted') {
         const subscription = event.data.object as Stripe.Subscription;
-        console.log(`[Webhook] ❌ customer.subscription.deleted: ${subscription.id}`);
         const usersRef = db.collection('users');
         const snapshot = await usersRef.where('stripeSubscriptionId', '==', subscription.id).get();
         if (!snapshot.empty) {
           snapshot.forEach(async (doc) => {
-            console.log(`[Webhook] 📝 Updating user ${doc.id} status to canceled`);
             await doc.ref.update({ subscriptionStatus: 'canceled' });
           });
         }

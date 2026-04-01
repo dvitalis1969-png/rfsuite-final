@@ -17,15 +17,17 @@ try {
     const zip = new AdmZip();
     
     // Add all files in dist to the zip
-    // Instead of manual iteration which can be buggy with adm-zip, add the whole folder content
-    zip.addLocalFolder(distPath);
-
-    // Remove any existing zip files from inside the zip to avoid recursion
-    zip.getEntries().forEach(entry => {
-        if (entry.entryName.endsWith('.zip')) {
-            zip.deleteFile(entry);
+    // Add files individually to avoid adding the zip file itself if it's already in dist
+    const files = fs.readdirSync(distPath);
+    for (const file of files) {
+        if (file === 'RF_Suite_Deploy.zip') continue;
+        const filePath = path.join(distPath, file);
+        if (fs.lstatSync(filePath).isDirectory()) {
+            zip.addLocalFolder(filePath, file);
+        } else {
+            zip.addLocalFile(filePath);
         }
-    });
+    }
 
     zip.writeZip(zipPath);
     
