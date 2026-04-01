@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "tsx server.ts",
-    "build": "vite build && npx esbuild server.ts --bundle --platform=node --outfile=dist/server.js --format=esm --external:lightningcss && tsx generate-zip.ts",
+    "build": "vite build && tsc server.ts --outDir dist --module nodenext --moduleResolution nodenext --esModuleInterop --skipLibCheck && tsx generate-zip.ts",
     "start": "node dist/server.js",
     "preview": "vite preview",
     "lint": "tsc --noEmit"
