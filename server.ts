@@ -175,16 +175,15 @@ async function startServer() {
   });
 
   // Stripe webhook needs raw body
+  // Stripe webhook handler
   const stripeWebhookHandler = async (req: any, res: any) => {
     initFirebaseAdmin();
     const stripe = getStripe();
     const sig = req.headers['stripe-signature'];
-    const contentType = req.headers['content-type'];
-    console.log(`[Webhook Debug] Signature: ${sig}, Content-Type: ${contentType}, RawBody exists: ${!!req.rawBody}, RawBody length: ${req.rawBody ? req.rawBody.length : 'undefined'}`);
+    
     let endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
     if (!endpointSecret) {
-      // Try to load from local stripe-config.json if it exists
       const stripePath = path.join(process.cwd(), 'stripe-config.json');
       if (fs.existsSync(stripePath)) {
         try {
@@ -200,7 +199,7 @@ async function startServer() {
 
     let event: Stripe.Event;
     try {
-      event = stripe.webhooks.constructEvent(req.rawBody, sig, endpointSecret);
+      event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
     } catch (err: any) {
       console.error(`Webhook Error: ${err.message}`);
       return res.status(400).send(`Webhook Error: ${err.message}`);
@@ -220,7 +219,6 @@ async function startServer() {
             lastUpdated: new Date().toISOString()
           };
           
-          // Try to get the plan name from line items
           try {
             const expandedSession = await stripe.checkout.sessions.retrieve(session.id, {
               expand: ['line_items.data.price.product'],
@@ -253,16 +251,29 @@ async function startServer() {
           await db.collection('users').doc(userId).set(updateData, { merge: true });
           console.log(`[Webhook] ✅ Firestore update successful for ${userId}`);
         }
+      } else if (event.type === 'customer.subscription.deleted') {
+        const subscription = event.data.object as Stripe.Subscription;
+        console.log(`[Webhook] ❌ customer.subscription.deleted: ${subscription.id}`);
+        const usersRef = db.collection('users');
+        const snapshot = await usersRef.where('stripeSubscriptionId', '==', subscription.id).get();
+        if (!snapshot.empty) {
+          snapshot.forEach(async (doc) => {
+            console.log(`[Webhook] 📝 Updating user ${doc.id} status to canceled`);
+            await doc.ref.update({ subscriptionStatus: 'canceled' });
+          });
+        }
       }
       res.json({ received: true });
     } catch (err: any) {
       console.error(`[Webhook] ❌ Error processing webhook event:`, err);
-      res.status(500).send(`Webhook Error: ${err.message}`);
+      res.status(500).json({ error: err.message });
     }
   };
 
-  app.post('/api/stripe-webhook', express.raw({ type: 'application/json', verify: (req: any, res: any, buf: Buffer) => { req.rawBody = buf; } }), stripeWebhookHandler);
-  app.post('/api/stripe-webhook/', express.raw({ type: 'application/json', verify: (req: any, res: any, buf: Buffer) => { req.rawBody = buf; } }), stripeWebhookHandler);
+  app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), stripeWebhookHandler);
+  app.post('/api/stripe-webhook/', express.raw({ type: 'application/json' }), stripeWebhookHandler);
+
+
 
   app.get("/api/config", (req, res) => {
     let stripePublishable = process.env.VITE_STRIPE_PUBLISHABLE_KEY;
